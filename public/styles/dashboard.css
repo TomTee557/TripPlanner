@@ -1,0 +1,63 @@
+/* html {
+    margin: 0;
+    padding: 0;
+} */
+nav {
+    background-color: bisque;
+    width: 100vw;
+    height: 120px;
+    display: flex;
+    padding: 2em 0 0 2em;
+}
+
+main {
+    background-color: aquamarine;
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+}
+
+aside {
+    background-color: cadetblue;
+}
+
+section {
+    background-color: lightgray;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1em;
+    justify-content: flex-start;
+}
+
+aside, section {
+    padding: 1em;    
+}
+
+.card {
+    width: 250px;
+    background-color:white;
+    border-radius: 1em;
+}
+
+.card > img {
+    width: 100%;
+    border-radius: 1em 1em 0 0;
+}
+
+p {
+    margin: 0;
+}
+
+.photo-settings {
+    background-color:blue;
+    height: fit-content;
+    display:flex;
+    flex-direction:row;
+    flex-wrap: wrap;
+    
+}
+
+@media (max-width: 700px) {
+    main {
+        grid-template-columns: 1fr;
+    }
+}
