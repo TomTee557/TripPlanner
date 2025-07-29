@@ -1,18 +1,11 @@
-const mockUsers = [
-  { login: 'admin', password: 'admin' }
-];
-
-const loginSection = document.getElementById('loginSection');
-const registerSection = document.getElementById('registerSection');
-
-const loginBtn = document.querySelector('.auth__button--login');
-const registerBtn = document.querySelector('.auth__button--register');
-
-const showLogin = document.getElementById('showLogin');
-const showRegister = document.getElementById('showRegister');
+import { postForm } from './fetch.js';
 
 const loginForm = document.getElementById('loginForm');
 const registerForm = document.getElementById('registerForm');
+const showLogin = document.getElementById('showLogin');
+const showRegister = document.getElementById('showRegister');
+const loginSection = document.getElementById('loginSection');
+const registerSection = document.getElementById('registerSection');
 
 // -- Switch widoków
 showLogin?.addEventListener('click', e => {
@@ -60,46 +53,54 @@ function isOnlyLetters(text) {
   return /^[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ]+$/.test(text);
 }
 
-// -- LOGOWANIE
-loginBtn?.addEventListener('click', () => {
-  const loginInput = document.getElementById('login');
-  const passInput = document.getElementById('password');
-
-  loginInput.classList.remove('auth__input--error');
-  passInput.classList.remove('auth__input--error');
+// --- LOGOWANIE ---
+loginForm?.addEventListener('submit', async (e) => {
+  e.preventDefault();
   removeErrorMessage();
 
-  const user = mockUsers.find(
-    u => u.login === loginInput.value && u.password === passInput.value
-  );
+  const loginInput = document.getElementById('login');
+  const passInput = document.getElementById('password');
+  loginInput.classList.remove('auth__input--error');
+  passInput.classList.remove('auth__input--error');
 
-  if (user) {
-    removeErrorMessage();
-    alert('logged in successfully!'); // todo: replace with actual login logic
-    loginInput.value = '';
-    passInput.value = '';
+  // Wstępna walidacja
+  if (!loginInput.value.trim() || !passInput.value.trim()) {
+    if (!loginInput.value.trim()) loginInput.classList.add('auth__input--error');
+    if (!passInput.value.trim()) passInput.classList.add('auth__input--error');
+    showErrorMessage('Please fill in all fields', loginSection);
+    return;
+  }
+
+  // AJAX
+  const res = await postForm('/login', {
+    login: loginInput.value,
+    password: passInput.value // todo: hasło powinno być hashowane na serwerze !!!
+  });
+
+  if (res.success) {
+   window.location.href = '/mainApp';
   } else {
     loginInput.classList.add('auth__input--error');
     passInput.classList.add('auth__input--error');
-    showErrorMessage('Wrong username or password', loginSection);
-    loginInput.value = '';
-    passInput.value = '';
+    showErrorMessage(res.message || 'Wrong username or password', loginSection);
   }
 });
 
-// -- REJESTRACJA
-registerBtn?.addEventListener('click', () => {
+// --- REJESTRACJA ---
+registerForm?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  removeErrorMessage();
+
   const name = document.getElementById('name');
   const surname = document.getElementById('surname');
   const login = document.getElementById('regLogin');
   const password = document.getElementById('regPassword');
   const confirm = document.getElementById('confirmPassword');
-
   const inputs = [name, surname, login, password, confirm];
+
   let valid = true;
   let errorMessage = '';
 
-  removeErrorMessage();
   inputs.forEach(input => {
     input.classList.remove('auth__input--error');
     if (!input.value.trim()) {
@@ -108,13 +109,11 @@ registerBtn?.addEventListener('click', () => {
     }
   });
 
-
   if (name.value.trim() && !isOnlyLetters(name.value.trim())) {
     name.classList.add('auth__input--error');
     valid = false;
     errorMessage = 'Name must contain only letters';
   }
-
 
   if (surname.value.trim() && !isOnlyLetters(surname.value.trim())) {
     surname.classList.add('auth__input--error');
@@ -122,21 +121,36 @@ registerBtn?.addEventListener('click', () => {
     errorMessage = 'Surname must contain only letters';
   }
 
-
   if (password.value !== confirm.value) {
     confirm.classList.add('auth__input--error');
     valid = false;
     errorMessage = 'Passwords must be identical';
   }
 
-  if (valid) {
-    mockUsers.push({ login: login.value, password: password.value });
+  if (!valid) {
+    if (!errorMessage) errorMessage = 'Please fill in all fields correctly';
+    showErrorMessage(errorMessage, registerSection);
+    return;
+  }
+
+  // AJAX
+  const res = await postForm('/register', {
+    name: name.value,
+    surname: surname.value,
+    regLogin: login.value,
+    regPassword: password.value, // todo: hasło powinno być hashowane na serwerze !!!
+    confirmPassword: confirm.value
+  });
+
+  if (res.success) {
     alert('Registration successful! Now please log in.');
     showLogin.click();
   } else {
-    if (!errorMessage) {
-      errorMessage = 'Please fill in all fields correctly';
+    // Zaznacz błędne pola jeśli wiadomo które
+    if (res.field) {
+      const field = document.getElementById(res.field);
+      if (field) field.classList.add('auth__input--error');
     }
-    showErrorMessage(errorMessage, registerSection);
+    showErrorMessage(res.message || 'Registration failed', registerSection);
   }
 });

@@ -11,6 +11,9 @@ Router::get('mainApp', 'DefaultController', 'mainApp');
 // Trasa POST do logowania - przy korzystaniu z formularza logowania
 Router::post('login', 'SecurityController', 'login');
 
+// Trasa POST do rejestracji - przy korzystaniu z formularza rejestracji
+Router::post('register', 'SecurityController', 'register');
+
 // (opcjonalnie) domyślna trasa na / przekierowuje na auth
 Router::get('', 'DefaultController', 'auth');
 

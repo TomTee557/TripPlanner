@@ -8,8 +8,8 @@
   <link rel="stylesheet" href="/public/styles/global.css" />
   <link rel="stylesheet" href="/public/styles/auth.css" />
   <!-- TODO api.js -->
-  <script src="/public/scripts/api.js" defer></script>
-  <script src="/public/scripts/auth.js" defer></script>
+<script type="module" src="/public/scripts/auth.js"></script>
+<script src="/public/scripts/auth.js" defer></script>
 </head>
 <body class="auth">
   <div class="auth__background"></div>
@@ -36,7 +36,7 @@
           <label for="password" class="auth__label">Password:</label>
           <input type="password" id="password" name="password" class="auth__input" required />
 
-          <button type="button" class="auth__button auth__button--login">Log in</button>
+          <button type="submit" class="auth__button auth__button--login">Log in</button>
           <p class="auth__switch">Don’t have an account? <a href="#" id="showRegister">Register</a></p>
         <!-- MIEJSCE NA KOMUNIKAT O BŁĘDZIE -->
         </div>
@@ -61,7 +61,7 @@
           <label class="auth__label">Confirm password:</label>
           <input type="password" id="confirmPassword" name="confirmPassword" class="auth__input" required />
 
-          <button type="button" class="auth__button auth__button--register">Register</button>
+          <button type="submit" class="auth__button auth__button--register">Register</button>
           <p class="auth__switch"><a href="#" id="showLogin">Back to log in</a></p>
         </div>
       </form>
