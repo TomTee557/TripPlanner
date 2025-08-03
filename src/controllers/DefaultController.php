@@ -6,6 +6,10 @@ class DefaultController extends AppController {
 
     public function auth()
     {
+        // Dodaj inicjalizację sesji tutaj
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
         $this->render('auth');
     }
 

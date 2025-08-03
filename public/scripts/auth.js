@@ -1,102 +1,83 @@
-import { postForm } from './fetch.js';
-
 const loginForm = document.getElementById('loginForm');
 const registerForm = document.getElementById('registerForm');
 const showLogin = document.getElementById('showLogin');
 const showRegister = document.getElementById('showRegister');
-const loginSection = document.getElementById('loginSection');
-const registerSection = document.getElementById('registerSection');
 
-// -- Switch widoków
+// SWITCH - Widoków
 showLogin?.addEventListener('click', e => {
   e.preventDefault();
   registerForm.classList.add('auth__section--hidden');
   loginForm.classList.remove('auth__section--hidden');
-  clearForm();
-  removeErrorMessage();
+  clearErrorMessage('register');
 });
 
 showRegister?.addEventListener('click', e => {
   e.preventDefault();
   loginForm.classList.add('auth__section--hidden');
   registerForm.classList.remove('auth__section--hidden');
-  clearForm();
-  removeErrorMessage();
+  clearErrorMessage('login');
 });
 
-// -- Czyszczenie inputów i komunikatów
-function clearForm() {
-  document.querySelectorAll('.auth__input').forEach(input => {
-    input.value = '';
-    input.classList.remove('auth__input--error');
-  });
+function showErrorMessage(msg, type) {
+  const errorDiv = document.getElementById(type === 'login' ? 'loginError' : 'registerError');
+  if (errorDiv) {
+    errorDiv.innerHTML = `<p class="auth__message--error">${msg}</p>`;
+  }
 }
 
-function removeErrorMessage() {
-  const existing = document.querySelector('#auth-error-message');
-  if (existing) existing.remove();
-}
-
-function showErrorMessage(msg, container) {
-  removeErrorMessage();
-  const p = document.createElement('p');
-  p.className = 'auth__message auth__message--error';
-  p.id = 'auth-error-message';
-  p.style.color = 'red';
-  p.style.marginTop = '0.5rem';
-  p.style.textAlign = 'center';
-  p.textContent = msg;
-  container.appendChild(p);
+function clearErrorMessage(type) {
+  const errorDiv = document.getElementById(type === 'login' ? 'loginError' : 'registerError');
+  if (errorDiv) {
+    errorDiv.innerHTML = '';
+  }
 }
 
 function isOnlyLetters(text) {
   return /^[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ]+$/.test(text);
 }
 
-// --- LOGOWANIE ---
-loginForm?.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  removeErrorMessage();
+// regex do walidacji emaila
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
+}
 
-  const loginInput = document.getElementById('login');
+// WALIDACJA LOGOWANIA
+loginForm?.addEventListener('submit', e => {
+  clearErrorMessage('login');
+  const emailInput = document.getElementById('email');
   const passInput = document.getElementById('password');
-  loginInput.classList.remove('auth__input--error');
+  let valid = true;
+  emailInput.classList.remove('auth__input--error');
   passInput.classList.remove('auth__input--error');
-
-  // Wstępna walidacja
-  if (!loginInput.value.trim() || !passInput.value.trim()) {
-    if (!loginInput.value.trim()) loginInput.classList.add('auth__input--error');
-    if (!passInput.value.trim()) passInput.classList.add('auth__input--error');
-    showErrorMessage('Please fill in all fields', loginSection);
-    return;
+  if (!emailInput.value.trim()) {
+    emailInput.classList.add('auth__input--error');
+    valid = false;
+  } else if (!isValidEmail(emailInput.value.trim())) {
+    emailInput.classList.add('auth__input--error');
+    valid = false;
+    showErrorMessage('Please enter a valid email address', 'login');
   }
-
-  // AJAX
-  const res = await postForm('/login', {
-    login: loginInput.value,
-    password: passInput.value // todo: hasło powinno być hashowane na serwerze !!!
-  });
-
-  if (res.success) {
-   window.location.href = '/mainApp';
-  } else {
-    loginInput.classList.add('auth__input--error');
+  if (!passInput.value.trim()) {
     passInput.classList.add('auth__input--error');
-    showErrorMessage(res.message || 'Wrong username or password', loginSection);
+    valid = false;
+  }
+  if (!valid) {
+    e.preventDefault();
+    if (!emailInput.value.trim() || !passInput.value.trim()) {
+      showErrorMessage('Please fill in all fields', 'login');
+    }
   }
 });
 
-// --- REJESTRACJA ---
-registerForm?.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  removeErrorMessage();
-
+// WALIDACJA REJESTRACJI
+registerForm?.addEventListener('submit', e => {
+  clearErrorMessage('register');
   const name = document.getElementById('name');
   const surname = document.getElementById('surname');
-  const login = document.getElementById('regLogin');
+  const email = document.getElementById('regEmail');
   const password = document.getElementById('regPassword');
   const confirm = document.getElementById('confirmPassword');
-  const inputs = [name, surname, login, password, confirm];
+  const inputs = [name, surname, email, password, confirm];
 
   let valid = true;
   let errorMessage = '';
@@ -121,6 +102,12 @@ registerForm?.addEventListener('submit', async (e) => {
     errorMessage = 'Surname must contain only letters';
   }
 
+  if (email.value.trim() && !isValidEmail(email.value.trim())) {
+    email.classList.add('auth__input--error');
+    valid = false;
+    errorMessage = 'Please enter a valid email address';
+  }
+
   if (password.value !== confirm.value) {
     confirm.classList.add('auth__input--error');
     valid = false;
@@ -128,29 +115,7 @@ registerForm?.addEventListener('submit', async (e) => {
   }
 
   if (!valid) {
-    if (!errorMessage) errorMessage = 'Please fill in all fields correctly';
-    showErrorMessage(errorMessage, registerSection);
-    return;
-  }
-
-  // AJAX
-  const res = await postForm('/register', {
-    name: name.value,
-    surname: surname.value,
-    regLogin: login.value,
-    regPassword: password.value, // todo: hasło powinno być hashowane na serwerze !!!
-    confirmPassword: confirm.value
-  });
-
-  if (res.success) {
-    alert('Registration successful! Now please log in.');
-    showLogin.click();
-  } else {
-    // Zaznacz błędne pola jeśli wiadomo które
-    if (res.field) {
-      const field = document.getElementById(res.field);
-      if (field) field.classList.add('auth__input--error');
-    }
-    showErrorMessage(res.message || 'Registration failed', registerSection);
+    e.preventDefault();
+    showErrorMessage(errorMessage || 'Please fill in all fields correctly', 'register');
   }
 });

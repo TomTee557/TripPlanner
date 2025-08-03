@@ -3,13 +3,13 @@
 class User {
     public $name;
     public $surname;
-    public $login;
+    public $email;
     public $password;
 
-    public function __construct($name, $surname, $login, $password) {
+    public function __construct($name, $surname, $email, $password) {
         $this->name = $name;
         $this->surname = $surname;
-        $this->login = $login;
+        $this->email = $email;
         $this->password = $password;
     }
 }

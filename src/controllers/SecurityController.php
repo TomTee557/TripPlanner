@@ -8,7 +8,7 @@ class SecurityController extends AppController {
     private function &getMockUsers() {
         if (!isset($_SESSION['mock_users'])) {
             $_SESSION['mock_users'] = [
-                new User('Admin', 'Admin', 'admin', 'admin')
+                new User('Admin', 'Admin', 'admin@admin.com', 'admin')
             ];
         }
         return $_SESSION['mock_users'];
@@ -16,52 +16,69 @@ class SecurityController extends AppController {
 
     public function login()
     {
-        header('Content-Type: application/json');
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        
         if (!$this->isPost()) {
-            echo json_encode(['success' => false, 'message' => 'Invalid request']);
-            return;
+            return $this->render('auth');
         }
 
-        $login = $_POST['login'] ?? '';
+        $email = strtolower(trim($_POST['email'] ?? '')); // Normalizacja do małych liter
         $password = $_POST['password'] ?? '';
 
         $users = $this->getMockUsers();
         foreach ($users as $user) {
-            if ($user->login === $login && $user->password === $password) {
-                echo json_encode(['success' => true]);
-                return;
+            // Porównywanie bez uwzględniania wielkości liter
+            if (strtolower($user->email) === $email && $user->password === $password) {
+                return $this->render('mainApp');
             }
         }
 
-        echo json_encode(['success' => false, 'message' => 'Wrong username or password']);
+        // Błąd logowania – przekierowanie z komunikatem
+        $_SESSION['messages'] = ['Wrong email or password'];
+        $_SESSION['formType'] = 'login';
+        header('Location: /auth');
+        exit;
     }
 
     public function register()
     {
-        header('Content-Type: application/json');
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        
         if (!$this->isPost()) {
-            echo json_encode(['success' => false, 'message' => 'Invalid request']);
-            return;
+            return $this->render('auth');
         }
 
+        $email = trim($_POST['regEmail'] ?? '');
         $name = trim($_POST['name'] ?? '');
         $surname = trim($_POST['surname'] ?? '');
-        $login = trim($_POST['regLogin'] ?? '');
         $password = $_POST['regPassword'] ?? '';
-        $confirm = $_POST['confirmPassword'] ?? '';
 
+        // Normalizacja email do małych liter przed sprawdzeniem
+        $emailLowerCase = strtolower($email);
+        
         $users = $this->getMockUsers();
         foreach ($users as $user) {
-            if ($user->login === $login) {
-                echo json_encode(['success' => false, 'message' => 'Login already exists', 'field' => 'regLogin']);
-                return;
+            // Porównywanie bez uwzględniania wielkości liter
+            if (strtolower($user->email) === $emailLowerCase) {
+                $_SESSION['messages'] = ['User with the specified email address already exists'];
+                $_SESSION['formType'] = 'register';
+                header('Location: /auth');
+                exit;
             }
         }
 
-        // Dodaj użytkownika (walidacja była po stronie JS)
-        $users[] = new User($name, $surname, $login, $password);
+        // Dodaj użytkownika - zapis z oryginalnym emailem
+        $users[] = new User($name, $surname, $email, $password);
         $_SESSION['mock_users'] = $users;
 
-        echo json_encode(['success' => true]);
+        // Po rejestracji komunikat na panelu logowania
+        $_SESSION['messages'] = ['Registration successful! Now please log in.'];
+        $_SESSION['formType'] = 'login';
+        header('Location: /auth');
+        exit;
     }
 }
