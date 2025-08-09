@@ -1,3 +1,86 @@
+import { postJson } from './fetch.js';
+
+// Session management configuration
+const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes in milliseconds
+let sessionTimer;
+let lastActivity = Date.now();
+
+// Session timeout management
+function resetSessionTimer() {
+  lastActivity = Date.now();
+  clearTimeout(sessionTimer);
+  sessionTimer = setTimeout(logoutDueToInactivity, SESSION_TIMEOUT);
+}
+
+function logoutDueToInactivity() {
+  showPopup("Your session will expire in 30 seconds due to inactivity. You will be automatically logged out.", "Session Expiring");
+  
+  // Show countdown popup for 30 seconds then logout
+  setTimeout(() => {
+    performLogoutViaForm('inactivity');
+  }, 30000);
+}
+
+function performLogoutViaForm(reason = 'manual') {
+  // Create a form element dynamically - same as logout button
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = '/logout';
+  form.style.display = 'none';
+  
+  const reasonInput = document.createElement('input');
+  reasonInput.type = 'hidden';
+  reasonInput.name = 'logout_reason';
+  reasonInput.value = reason;
+  form.appendChild(reasonInput);
+  
+  document.body.appendChild(form);
+  form.submit();
+}
+
+
+function trackActivity() {
+  resetSessionTimer();
+}
+
+// Events that indicate user activity
+const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+
+// Initialize activity tracking
+function initSessionManagement() {
+  // Start the timer
+  resetSessionTimer();
+  
+  activityEvents.forEach(event => {
+    document.addEventListener(event, trackActivity, true);
+  });
+  
+  // Handle page visibility change - tab switching
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      resetSessionTimer();
+    }
+  });
+  
+  // Handle browser/tab close
+  window.addEventListener('beforeunload', () => {
+    // Create form for logout
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/logout';
+    
+    const reasonInput = document.createElement('input');
+    reasonInput.name = 'logout_reason';
+    reasonInput.value = 'browser_close';
+    form.appendChild(reasonInput);
+    
+    // For beforeunload, use sendBeacon as backup
+    const formData = new FormData();
+    formData.append('logout_reason', 'browser_close');
+    navigator.sendBeacon('/logout', formData);
+  });
+}
+
 // Mock data for trips
 const mockTrips = [
   {
@@ -75,6 +158,7 @@ document.addEventListener('DOMContentLoaded', function() {
     searchPanel.classList.remove('main-app__search-panel--hidden');
     showSearchBtn.style.display = 'none';
   }
+  initSessionManagement();
 });
 
 // Clock functionality
@@ -333,4 +417,37 @@ function handleAddTrip() {
 function editTrip(tripId) {
   // TODO: Implement popup for editing trip
   alert(`Edit trip functionality will be implemented with popup. Trip ID: ${tripId}`);
+}
+
+function showPopup(message, title = "Information") {
+  const popupOverlay = document.getElementById('popupOverlay');
+  const popupTitle = document.getElementById('popupTitle');
+  const popupContent = document.getElementById('popupContent');
+  const popupActions = document.getElementById('popupActions');
+  const popupClose = document.getElementById('popupClose');
+  const popupPrimaryBtn = document.getElementById('popupPrimaryBtn');
+
+  // Set content
+  popupTitle.textContent = title;
+  popupContent.textContent = message;
+  
+  // Reset actions to just OK button
+  popupActions.innerHTML = '<button class="popup__button popup__button--primary" id="popupPrimaryBtn">OK</button>';
+  
+  // Show popup
+  popupOverlay.style.display = 'flex';
+
+  // Add event listeners for closing
+  const newPopupPrimaryBtn = document.getElementById('popupPrimaryBtn');
+  const closePopup = () => {
+    popupOverlay.style.display = 'none';
+  };
+
+  newPopupPrimaryBtn.onclick = closePopup;
+  popupClose.onclick = closePopup;
+  popupOverlay.onclick = (e) => {
+    if (e.target === popupOverlay) {
+      closePopup();
+    }
+  };
 }

@@ -48,7 +48,13 @@ if (empty($formType) && !empty($_SESSION['formType'])) {
             <?php if (!empty($messages) && ($formType ?? '') === 'login'): ?>
               <?php foreach ($messages as $msg): ?>
                 <?php
-                  $messageClass = $msg === 'Registration successful! Now please log in.' 
+                  $successMessages = [
+                    'Registration successful! Now please log in.',
+                    'You have been successfully logged out.',
+                    'You have been logged out due to inactivity.',
+                    'You have been logged out.'
+                  ];
+                  $messageClass = in_array($msg, $successMessages) 
                     ? 'auth__message--success' 
                     : 'auth__message--error';
                 ?>

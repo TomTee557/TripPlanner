@@ -31,7 +31,15 @@ class SecurityController extends AppController {
         foreach ($users as $user) {
             // Porównywanie bez uwzględniania wielkości liter
             if (strtolower($user->email) === $email && $user->password === $password) {
-                return $this->render('mainApp');
+                // Set user session
+                $_SESSION['user_logged_in'] = true;
+                $_SESSION['user_email'] = $user->email;
+                $_SESSION['user_name'] = $user->name;
+                $_SESSION['last_activity'] = time(); // Set initial activity time
+                
+                // Redirect to mainApp instead of rendering directly
+                header('Location: /mainApp');
+                exit;
             }
         }
 
@@ -78,6 +86,39 @@ class SecurityController extends AppController {
         // Po rejestracji komunikat na panelu logowania
         $_SESSION['messages'] = ['Registration successful! Now please log in.'];
         $_SESSION['formType'] = 'login';
+        header('Location: /auth');
+        exit;
+    }
+
+    public function logout()
+    {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        // Clear user session data
+        unset($_SESSION['user_logged_in']);
+        unset($_SESSION['user_email']);
+        unset($_SESSION['user_name']);
+        unset($_SESSION['last_activity']);
+        
+        // Set logout message based on reason
+        $logoutReason = $_POST['logout_reason'] ?? 'manual';
+        
+        switch ($logoutReason) {
+            case 'inactivity':
+                $_SESSION['messages'] = ['You have been logged out due to inactivity.'];
+                break;
+            case 'browser_close':
+                $_SESSION['messages'] = ['You have been logged out.'];
+                break;
+            default:
+                $_SESSION['messages'] = ['You have been successfully logged out.'];
+        }
+        
+        $_SESSION['formType'] = 'login';
+        
+        // Always redirect using PHP header
         header('Location: /auth');
         exit;
     }

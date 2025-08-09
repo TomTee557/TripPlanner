@@ -86,6 +86,13 @@
         <button type="submit" class="main-app__button main-app__button--search" id="searchBtn">Search</button>
       </div>
     </form>
+    
+    <!-- Logout form -->
+    <div class="main-app__logout-container">
+      <form method="POST" action="/logout" class="main-app__logout-form">
+        <button type="submit" class="main-app__logout">Logout</button>
+      </form>
+    </div>
   </div>
 
   <!-- Main Content (Right Column) -->
@@ -128,6 +135,22 @@
     </div>
   </div>
 
-  <script src="/public/scripts/mainApp.js" defer></script>
+  <!-- Generic Popup -->
+  <div class="popup-overlay" id="popupOverlay">
+    <div class="popup">
+      <div class="popup__header">
+        <h3 class="popup__title" id="popupTitle">Title</h3>
+        <button class="popup__close" id="popupClose">&times;</button>
+      </div>
+      <div class="popup__content" id="popupContent">
+        Popup Content
+      </div>
+      <div class="popup__actions" id="popupActions">
+        <button class="popup__button popup__button--primary" id="popupPrimaryBtn">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/public/scripts/mainApp.js"></script>
 </body>
 </html>
