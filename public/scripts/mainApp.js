@@ -125,16 +125,40 @@ const mockTrips = [
   }
 ];
 
+// Available pictures for trips
+const availablePictures = {
+  'mountains': {
+    name: 'Mountains',
+    path: '/public/assets/mountains.jpg'
+  },
+  'mountains-2': {
+    name: 'Mountains 2',
+    path: '/public/assets/mountains-2.jpg'
+  },
+  'oriental': {
+    name: 'Oriental',
+    path: '/public/assets/oriental.jpg'
+  },
+  'eiffel-tower': {
+    name: 'Eiffel Tower',
+    path: '/public/assets/eiffel-tower.jpg'
+  },
+  'mountain-3': {
+    name: 'Mountains 3',
+    path: '/public/assets/mountains-3.jpg'
+  },
+   'colosseum': {
+    name: 'Colosseum',
+    path: '/public/assets/colosseum.jpg'
+  }
+};
+
+let selectedPicture = null;
+let nextTripId = Math.max(...mockTrips.map(trip => trip.id)) + 1;
 let filteredTrips = [...mockTrips];
 
-// DOM elements
-const searchPanel = document.getElementById('searchPanel');
-const showSearchBtn = document.getElementById('showSearchBtn');
-const closeSearchBtn = document.getElementById('closeSearchBtn');
-const searchForm = document.getElementById('searchForm');
-const clearFiltersBtn = document.getElementById('clearFiltersBtn');
-const tripsList = document.getElementById('tripsList');
-const addTripBtn = document.getElementById('addTripBtn');
+// DOM elements - will be initialized after DOM is loaded
+let searchPanel, showSearchBtn, closeSearchBtn, searchForm, clearFiltersBtn, tripsList, addTripBtn;
 
 // Trip type mapping for display
 const tripTypeLabels = {
@@ -149,14 +173,33 @@ const tripTypeLabels = {
 
 // Initialize the app
 document.addEventListener('DOMContentLoaded', function() {
+  // Initialize DOM elements
+  searchPanel = document.getElementById('searchPanel');
+  showSearchBtn = document.getElementById('showSearchBtn');
+  closeSearchBtn = document.getElementById('closeSearchBtn');
+  searchForm = document.getElementById('searchForm');
+  clearFiltersBtn = document.getElementById('clearFiltersBtn');
+  tripsList = document.getElementById('tripsList');
+  addTripBtn = document.getElementById('addTripBtn');
+  
+  
   initializeClock();
   renderTrips(filteredTrips);
   setupEventListeners();
   
-  // Show search panel on desktop by default
+  // Show search panel on desktop by default, hide on mobile
   if (window.innerWidth > 1000) {
     searchPanel.classList.remove('main-app__search-panel--hidden');
-    showSearchBtn.style.display = 'none';
+    searchPanel.style.display = 'flex';
+    if (showSearchBtn) {
+      showSearchBtn.style.display = 'none';
+    }
+  } else {
+    searchPanel.classList.add('main-app__search-panel--hidden');
+    searchPanel.style.display = 'none';
+    if (showSearchBtn) {
+      showSearchBtn.style.display = 'block';
+    }
   }
   initSessionManagement();
 });
@@ -201,11 +244,13 @@ function setupEventListeners() {
   // Search panel toggle (mobile)
   showSearchBtn?.addEventListener('click', () => {
     searchPanel.classList.remove('main-app__search-panel--hidden');
+    searchPanel.style.display = 'flex';
     showSearchBtn.style.display = 'none';
   });
   
   closeSearchBtn?.addEventListener('click', () => {
     searchPanel.classList.add('main-app__search-panel--hidden');
+    searchPanel.style.display = 'none';
     if (window.innerWidth <= 1000) {
       showSearchBtn.style.display = 'block';
     }
@@ -231,10 +276,16 @@ function setupEventListeners() {
 function handleResize() {
   if (window.innerWidth > 1000) {
     searchPanel.classList.remove('main-app__search-panel--hidden');
-    showSearchBtn.style.display = 'none';
+    searchPanel.style.display = 'flex';
+    if (showSearchBtn) {
+      showSearchBtn.style.display = 'none';
+    }
   } else {
     searchPanel.classList.add('main-app__search-panel--hidden');
-    showSearchBtn.style.display = 'block';
+    searchPanel.style.display = 'none';
+    if (showSearchBtn) {
+      showSearchBtn.style.display = 'block';
+    }
   }
 }
 
@@ -345,6 +396,7 @@ function handleSearch(e) {
   // Hide search panel on mobile after search
   if (window.innerWidth <= 1000) {
     searchPanel.classList.add('main-app__search-panel--hidden');
+    searchPanel.style.display = 'none';
     showSearchBtn.style.display = 'block';
   }
 }
@@ -353,25 +405,20 @@ function handleSearch(e) {
 function clearFilters() {
   searchForm.reset();
   
-  // Clear trip type checkboxes
   const checkboxes = document.querySelectorAll('#tripTypeContent input[type="checkbox"]');
   checkboxes.forEach(checkbox => {
     checkbox.checked = false;
   });
   updateTripTypeDisplay();
-  
-  filteredTrips = [...mockTrips];
-  renderTrips(filteredTrips);
 }
 
-// Render trips
 function renderTrips(trips) {
   if (!tripsList) return;
   
   if (trips.length === 0) {
     tripsList.innerHTML = `
-      <div style="text-align: center; color: #666; padding: 2rem;">
-        <p>No trips found matching your criteria.</p>
+      <div style="text-align: center; padding: 2rem;">
+        <p style="color: #333; font-size: 1.2rem; font-weight: 500; margin: 0;">No trips found matching your criteria.</p>
       </div>
     `;
     return;
@@ -399,7 +446,6 @@ function renderTrips(trips) {
   `).join('');
 }
 
-// Format date for display
 function formatDate(dateString) {
   const date = new Date(dateString);
   return date.toLocaleDateString('en-GB', {
@@ -410,8 +456,214 @@ function formatDate(dateString) {
 }
 
 function handleAddTrip() {
-  // TODO: Implement popup for adding trip
-  alert('Add trip functionality will be implemented with popup');
+  showAddTripPopup();
+}
+
+function showAddTripPopup() {
+  const overlay = document.getElementById('addTripPopupOverlay');
+  const form = document.getElementById('addTripForm');
+  
+  // Reset form
+  form.reset();
+  selectedPicture = null;
+  updatePicturePreview();
+  
+  // Show popup
+  overlay.style.display = 'flex';
+  
+  // Setup event listeners for popup elements (needed each time popup opens)
+  setupPopupEventListeners();
+}
+
+
+function setupPopupEventListeners() {
+  // Close popup
+  const closeBtn = document.getElementById('addTripPopupClose');
+  const backBtn = document.getElementById('addTripBackBtn');
+  const overlay = document.getElementById('addTripPopupOverlay');
+  
+  if (closeBtn) closeBtn.onclick = hideAddTripPopup;
+  if (backBtn) backBtn.onclick = hideAddTripPopup;
+  if (overlay) {
+    overlay.onclick = (e) => {
+      if (e.target === overlay) hideAddTripPopup();
+    };
+  }
+  
+  // Picture selection
+  const choosePictureBtn = document.getElementById('choosePictureBtn');
+  if (choosePictureBtn) {
+    choosePictureBtn.onclick = showPictureSelectionPopup;
+  }
+  
+  // Currency converter (placeholder)
+  const currencyBtn = document.getElementById('currencyConverterBtn');
+  if (currencyBtn) {
+    currencyBtn.onclick = () => {
+      // TODO: Implement currency converter feature
+      showPopup("Currency converter feature coming soon", "Info");
+    };
+  }
+  
+  const form = document.getElementById('addTripForm');
+  const submitBtn = document.getElementById('addTripSubmitBtn');
+  
+  if (form) {
+    form.onsubmit = (e) => {
+      e.preventDefault();
+      return false;
+    };
+  }
+  
+  if (submitBtn) {
+    submitBtn.onclick = (e) => {
+      e.preventDefault();
+      handleAddTripSubmit();
+    };
+  }
+}
+
+function hideAddTripPopup() {
+  document.getElementById('addTripPopupOverlay').style.display = 'none';
+}
+
+function showPictureSelectionPopup() {
+  const overlay = document.getElementById('pictureSelectionPopupOverlay');
+  const grid = document.getElementById('pictureSelectionGrid');
+  
+  // Clear grid
+  grid.innerHTML = '';
+  
+  // Populate picture options
+  Object.keys(availablePictures).forEach(key => {
+    const picture = availablePictures[key];
+    const option = document.createElement('div');
+    option.className = 'picture-option';
+    if (selectedPicture === key) {
+      option.classList.add('selected');
+    }
+    
+    option.innerHTML = `
+      <img src="${picture.path}" alt="${picture.name}" class="picture-option__image" />
+      <div class="picture-option__name">${picture.name}</div>
+    `;
+    
+    option.onclick = () => selectPicture(key);
+    grid.appendChild(option);
+  });
+  
+  // Show popup
+  overlay.style.display = 'flex';
+  
+  // Setup event listeners
+  setupPictureSelectionEventListeners();
+}
+
+function setupPictureSelectionEventListeners() {
+  const closeBtn = document.getElementById('pictureSelectionPopupClose');
+  const backBtn = document.getElementById('pictureSelectionBackBtn');
+  const overlay = document.getElementById('pictureSelectionPopupOverlay');
+  
+  closeBtn.onclick = hidePictureSelectionPopup;
+  backBtn.onclick = hidePictureSelectionPopup;
+  overlay.onclick = (e) => {
+    if (e.target === overlay) hidePictureSelectionPopup();
+  };
+}
+
+function hidePictureSelectionPopup() {
+  document.getElementById('pictureSelectionPopupOverlay').style.display = 'none';
+}
+
+function selectPicture(key) {
+  selectedPicture = key;
+  updatePicturePreview();
+  hidePictureSelectionPopup();
+}
+
+function updatePicturePreview() {
+  const container = document.getElementById('previewContainer');
+  
+  if (selectedPicture && availablePictures[selectedPicture]) {
+    const picture = availablePictures[selectedPicture];
+    container.innerHTML = `
+      <img src="${picture.path}" alt="${picture.name}" class="add-trip-form__preview-image" />
+    `;
+  } else {
+    container.innerHTML = '<span class="add-trip-form__no-preview">No picture selected</span>';
+  }
+}
+
+function handleAddTripSubmit() {
+  const form = document.getElementById('addTripForm');
+  const submitBtn = document.getElementById('addTripSubmitBtn');
+  
+  if (submitBtn.disabled) {
+    return;
+  }
+  
+  submitBtn.disabled = true;
+  const originalText = submitBtn.textContent;
+  submitBtn.textContent = 'Adding...';
+  
+  const formData = new FormData(form);
+  
+  // Get form values
+  const dateFrom = document.getElementById('addTripDateFrom').value;
+  const dateTo = document.getElementById('addTripDateTo').value;
+  const tripType = document.getElementById('addTripType').value;
+  const title = document.getElementById('addTripTitle').value;
+  const country = document.getElementById('addTripCountry').value;
+  const tags = document.getElementById('addTripTags').value;
+  const budget = document.getElementById('addTripBudget').value;
+  const description = document.getElementById('addTripDescription').value;
+
+  const reEnableButton = () => {
+    submitBtn.disabled = false;
+    submitBtn.textContent = originalText;
+  };
+  
+  // Validate required fields
+  if (!dateFrom || !dateTo || !tripType || !title || !country) {
+    showPopup("Please fill in all required fields.", "Validation Error");
+    reEnableButton();
+    return;
+  }
+  
+  // Validate date range
+  if (new Date(dateFrom) >= new Date(dateTo)) {
+    showPopup("Date from must be before date to.", "Validation Error");
+    reEnableButton();
+    return;
+  }
+  
+  // Create new trip object
+  const newTrip = {
+    id: nextTripId++,
+    title: title,
+    dateFrom: dateFrom,
+    dateTo: dateTo,
+    country: country,
+    tripType: [tripType],
+    tags: tags ? tags.split(',').map(tag => tag.trim()) : [],
+    image: selectedPicture ? availablePictures[selectedPicture].path : '/public/assets/mountains.jpg',
+    budget: budget || null,
+    description: description || ''
+  };
+  
+  // Add to mockTrips array
+  mockTrips.push(newTrip);
+  
+  // Update filtered trips and re-render
+  filteredTrips = [...mockTrips];
+  renderTrips(filteredTrips);
+  
+  // Hide popup and show success message
+  hideAddTripPopup();
+  showPopup(`Trip "${title}" has been added successfully!`, "Success");
+  
+  // Re-enable button
+  reEnableButton();
 }
 
 function editTrip(tripId) {

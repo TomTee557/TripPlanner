@@ -10,7 +10,7 @@
 </head>
 <body class="main-app">
   <!-- Search Panel (Left Column) -->
-  <div class="main-app__search-panel main-app__search-panel--hidden" id="searchPanel">
+  <div class="main-app__search-panel" id="searchPanel">
     <button class="main-app__button main-app__button--search main-app__close-search--mobile" id="closeSearchBtn">Hide search panel</button>
     
     <img src="/public/assets/logo.png" alt="Trip Planner Logo" class="main-app__logo"/>
@@ -136,7 +136,7 @@
   </div>
 
   <!-- Generic Popup -->
-  <div class="popup-overlay" id="popupOverlay">
+  <div class="popup-overlay popup-overlay--top-priority" id="popupOverlay">
     <div class="popup">
       <div class="popup__header">
         <h3 class="popup__title" id="popupTitle">Title</h3>
@@ -147,6 +147,104 @@
       </div>
       <div class="popup__actions" id="popupActions">
         <button class="popup__button popup__button--primary" id="popupPrimaryBtn">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Trip Popup -->
+  <div class="popup-overlay" id="addTripPopupOverlay">
+    <div class="popup popup--add-trip">
+      <div class="popup__header">
+        <h3 class="popup__title">Add trip</h3>
+        <button class="popup__close" id="addTripPopupClose">&times;</button>
+      </div>
+      <div class="popup__content">
+        <form class="add-trip-form" id="addTripForm">
+          <div class="add-trip-form__row">
+            <div class="add-trip-form__col">
+              <div class="add-trip-form__field">
+                <label class="add-trip-form__label">Date from</label>
+                <input type="date" class="add-trip-form__input" id="addTripDateFrom" required />
+              </div>
+              <div class="add-trip-form__field">
+                <label class="add-trip-form__label">Trip type</label>
+                <select class="add-trip-form__input" id="addTripType" required>
+                  <option value="">Select trip type</option>
+                  <option value="city-break">City break</option>
+                  <option value="mountain">Mountain</option>
+                  <option value="exotic">Exotic</option>
+                  <option value="last-minute">Last Minute</option>
+                  <option value="family">Family</option>
+                  <option value="cultural">Cultural</option>
+                  <option value="trekking">Trekking</option>
+                </select>
+              </div>
+              <div class="add-trip-form__field">
+                <label class="add-trip-form__label">Country</label>
+                <input type="text" class="add-trip-form__input" id="addTripCountry" placeholder="Country" required />
+              </div>
+              <div class="add-trip-form__field">
+                <label class="add-trip-form__label">Budget</label>
+                <input type="text" class="add-trip-form__input" id="addTripBudget" placeholder="Budget" />
+              </div>
+            </div>
+            <div class="add-trip-form__col">
+              <div class="add-trip-form__field">
+                <label class="add-trip-form__label">Date to</label>
+                <input type="date" class="add-trip-form__input" id="addTripDateTo" required />
+              </div>
+              <div class="add-trip-form__field">
+                <label class="add-trip-form__label">Title</label>
+                <input type="text" class="add-trip-form__input" id="addTripTitle" placeholder="My trip" required />
+              </div>
+              <div class="add-trip-form__field">
+                <label class="add-trip-form__label">Tags</label>
+                <input type="text" class="add-trip-form__input" id="addTripTags" placeholder="Holiday" />
+              </div>
+              <div class="add-trip-form__field">
+                <label class="add-trip-form__label">Picture</label>
+                <button type="button" class="add-trip-form__input add-trip-form__picture-btn" id="choosePictureBtn">
+                  Choose the picture
+                </button>
+                <div class="add-trip-form__picture-preview" id="picturePreview">
+                  <span class="add-trip-form__preview-label">Picture preview:</span>
+                  <div class="add-trip-form__preview-container" id="previewContainer">
+                    <span class="add-trip-form__no-preview">No picture selected</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="add-trip-form__row add-trip-form__row--full">
+            <div class="add-trip-form__field">
+              <label class="add-trip-form__label">Description</label>
+              <textarea class="add-trip-form__input add-trip-form__textarea" id="addTripDescription" placeholder="Description" rows="4"></textarea>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="popup__actions">
+        <button type="button" class="popup__button popup__button--secondary" id="addTripBackBtn">Back</button>
+        <!-- <button type="button" class="popup__button popup__button--primary" id="currencyConverterBtn">Currency converter</button> -->
+        <button type="button" class="popup__button popup__button--primary" id="addTripSubmitBtn">Add trip</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Picture Selection Popup -->
+  <div class="popup-overlay" id="pictureSelectionPopupOverlay">
+    <div class="popup popup--picture-selection">
+      <div class="popup__header">
+        <h3 class="popup__title">Choose Picture</h3>
+        <button class="popup__close" id="pictureSelectionPopupClose">&times;</button>
+      </div>
+      <div class="popup__content">
+        <div class="picture-selection-grid" id="pictureSelectionGrid">
+          <!-- Picture options will be populated by JavaScript -->
+        </div>
+      </div>
+      <div class="popup__actions">
+        <button type="button" class="popup__button popup__button--secondary" id="pictureSelectionBackBtn">Back</button>
       </div>
     </div>
   </div>
