@@ -249,6 +249,24 @@
     </div>
   </div>
 
+  <!-- Trip Details Popup -->
+  <div class="popup-overlay" id="tripDetailsPopupOverlay">
+    <div class="popup popup--trip-details">
+      <div class="popup__header">
+        <h3 class="popup__title">Trip Details</h3>
+        <button class="popup__close" id="tripDetailsPopupClose">&times;</button>
+      </div>
+      <div class="popup__content">
+        <div id="tripDetailsContent">
+          <!-- Trip details will be populated by JavaScript -->
+        </div>
+      </div>
+      <div class="popup__actions">
+        <button type="button" class="popup__button popup__button--secondary" id="tripDetailsBackBtn">Back</button>
+      </div>
+    </div>
+  </div>
+
   <script type="module" src="/public/scripts/mainApp.js"></script>
 </body>
 </html>

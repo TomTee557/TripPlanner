@@ -84,44 +84,52 @@ function initSessionManagement() {
 // Mock data for trips
 const mockTrips = [
   {
-    id: 1,
+    id: "trip_1",
     title: "My Taiwan",
     dateFrom: "2025-07-20",
     dateTo: "2025-08-11",
     country: "Taiwan",
     tripType: ["exotic", "cultural"],
     tags: ["Holidays", "Trip of the month"],
+    budget: "$3,000",
+    description: "Explore the beautiful island of Taiwan with its stunning mountains, vibrant culture, and delicious cuisine.",
     image: "/public/assets/mountains.jpg"
   },
   {
-    id: 2,
+    id: "trip_2",
     title: "Paris Adventure", 
     dateFrom: "2025-09-15",
     dateTo: "2025-09-22",
     country: "France",
     tripType: ["city-break", "cultural"],
     tags: ["Weekend", "Romance"],
+    budget: "€1,500",
+    description: "A romantic getaway to the City of Light. Visit iconic landmarks, enjoy world-class cuisine, and stroll along the Seine.",
     image: "/public/assets/mountains.jpg"
   },
   {
-    id: 3,
+    id: "trip_3",
     title: "Alps Trekking",
     dateFrom: "2025-06-10",
     dateTo: "2025-06-17",
     country: "Switzerland", 
     tripType: ["mountain", "trekking"],
     tags: ["Adventure", "Sports"],
+    budget: "CHF 2,200",
+    description: "Challenge yourself with breathtaking mountain trails in the Swiss Alps. Experience pristine nature and stunning vistas.",
     image: "/public/assets/mountains.jpg"
   },
   {
-    id: 4,
+    id: "trip_4",
     title: "Family Beach Vacation",
     dateFrom: "2025-08-01",
     dateTo: "2025-08-14",
     country: "Spain",
     tripType: ["family", "last-minute"],
     tags: ["Beach", "Relaxation"],
-    image: "/public/assets/mountains.jpg"
+    budget: "€2,800",
+    description: "Perfect family vacation on the Spanish coast. Sun, sand, and relaxation for the whole family.",
+    image: "/public/assets/mountains-3.jpg"
   }
 ];
 
@@ -154,7 +162,8 @@ const availablePictures = {
 };
 
 let selectedPicture = null;
-let nextTripId = Math.max(...mockTrips.map(trip => trip.id)) + 1;
+// TODO: use a better counter
+let nextTripIdCounter = 5; // Start from 5 since we have 4 mock trips
 let filteredTrips = [...mockTrips];
 
 // DOM elements - will be initialized after DOM is loaded
@@ -438,12 +447,18 @@ function renderTrips(trips) {
         </div>
       </div>
       <div class="main-app__trip-actions">
-        <button class="main-app__trip-edit" onclick="editTrip(${trip.id})" title="Edit trip">
+        <button class="main-app__trip-details" data-trip-id="${trip.id}" title="Show details">
+          <img src="/public/assets/more_vert.png" alt="Details" class="main-app__trip-details-icon" />
+        </button>
+        <button class="main-app__trip-edit" data-trip-id="${trip.id}" title="Edit trip">
           <img src="/public/assets/edit.png" alt="Edit" class="main-app__trip-edit-icon" />
         </button>
       </div>
     </div>
   `).join('');
+  
+  // Setup event listeners for trip action buttons
+  setupTripActionListeners();
 }
 
 function formatDate(dateString) {
@@ -639,7 +654,7 @@ function handleAddTripSubmit() {
   
   // Create new trip object
   const newTrip = {
-    id: nextTripId++,
+    id: `trip_${nextTripIdCounter++}`,
     title: title,
     dateFrom: dateFrom,
     dateTo: dateTo,
@@ -702,4 +717,98 @@ function showPopup(message, title = "Information") {
       closePopup();
     }
   };
+}
+
+function showTripDetails(tripId) {
+  const trip = mockTrips.find(t => t.id === tripId);
+  if (!trip) {
+    showPopup("Trip not found", "Error");
+    return;
+  }
+  
+  showTripDetailsPopup(trip);
+}
+
+function showTripDetailsPopup(trip) {
+  const overlay = document.getElementById('tripDetailsPopupOverlay');
+  const content = document.getElementById('tripDetailsContent');
+  
+  // Generate trip details HTML
+  content.innerHTML = `
+    <div class="trip-details">
+      <div class="trip-details__image-container">
+        <img src="${trip.image}" alt="${trip.title}" class="trip-details__image" />
+      </div>
+      <div class="trip-details__info">
+        <div class="trip-details__field">
+          <strong>Title:</strong> ${trip.title}
+        </div>
+        <div class="trip-details__field">
+          <strong>Country:</strong> ${trip.country}
+        </div>
+        <div class="trip-details__field">
+          <strong>Date From:</strong> ${formatDate(trip.dateFrom)}
+        </div>
+        <div class="trip-details__field">
+          <strong>Date To:</strong> ${formatDate(trip.dateTo)}
+        </div>
+        <div class="trip-details__field">
+          <strong>Trip Type:</strong> ${trip.tripType.map(type => tripTypeLabels[type] || type).join(', ')}
+        </div>
+        <div class="trip-details__field">
+          <strong>Tags:</strong> ${trip.tags.length > 0 ? trip.tags.join(', ') : 'No tags'}
+        </div>
+        ${trip.budget ? `<div class="trip-details__field">
+          <strong>Budget:</strong> ${trip.budget}
+        </div>` : ''}
+        ${trip.description ? `<div class="trip-details__field">
+          <strong>Description:</strong> ${trip.description}
+        </div>` : ''}
+      </div>
+    </div>
+  `;
+  
+  // Show popup
+  overlay.style.display = 'flex';
+  
+  // Setup event listeners
+  setupTripDetailsEventListeners();
+}
+
+function setupTripDetailsEventListeners() {
+  const closeBtn = document.getElementById('tripDetailsPopupClose');
+  const backBtn = document.getElementById('tripDetailsBackBtn');
+  const overlay = document.getElementById('tripDetailsPopupOverlay');
+  
+  if (closeBtn) closeBtn.onclick = hideTripDetailsPopup;
+  if (backBtn) backBtn.onclick = hideTripDetailsPopup;
+  if (overlay) {
+    overlay.onclick = (e) => {
+      if (e.target === overlay) hideTripDetailsPopup();
+    };
+  }
+}
+
+function hideTripDetailsPopup() {
+  document.getElementById('tripDetailsPopupOverlay').style.display = 'none';
+}
+
+function setupTripActionListeners() {
+  // Setup listeners for all trip details buttons
+  const detailsButtons = document.querySelectorAll('.main-app__trip-details');
+  detailsButtons.forEach(button => {
+    button.addEventListener('click', (e) => {
+      const tripId = e.currentTarget.getAttribute('data-trip-id');
+      showTripDetails(tripId);
+    });
+  });
+  
+  // Setup listeners for all trip edit buttons  
+  const editButtons = document.querySelectorAll('.main-app__trip-edit');
+  editButtons.forEach(button => {
+    button.addEventListener('click', (e) => {
+      const tripId = e.currentTarget.getAttribute('data-trip-id');
+      editTrip(tripId);
+    });
+  });
 }
