@@ -231,6 +231,85 @@
     </div>
   </div>
 
+  <!-- Edit Trip Popup -->
+  <div class="popup-overlay" id="editTripPopupOverlay">
+    <div class="popup popup--edit-trip">
+      <div class="popup__header">
+        <h3 class="popup__title">Edit trip</h3>
+        <button class="popup__close" id="editTripPopupClose">&times;</button>
+      </div>
+      <div class="popup__content">
+        <form class="add-trip-form" id="editTripForm">
+          <div class="add-trip-form__row">
+            <div class="add-trip-form__col">
+              <div class="add-trip-form__field">
+                <label class="add-trip-form__label">Date from</label>
+                <input type="date" class="add-trip-form__input" id="editTripDateFrom" required />
+              </div>
+              <div class="add-trip-form__field">
+                <label class="add-trip-form__label">Trip type</label>
+                <select class="add-trip-form__input" id="editTripType" required>
+                  <option value="">Select trip type</option>
+                  <option value="city-break">City break</option>
+                  <option value="mountain">Mountain</option>
+                  <option value="exotic">Exotic</option>
+                  <option value="last-minute">Last Minute</option>
+                  <option value="family">Family</option>
+                  <option value="cultural">Cultural</option>
+                  <option value="trekking">Trekking</option>
+                </select>
+              </div>
+              <div class="add-trip-form__field">
+                <label class="add-trip-form__label">Country</label>
+                <input type="text" class="add-trip-form__input" id="editTripCountry" placeholder="Country" required />
+              </div>
+              <div class="add-trip-form__field">
+                <label class="add-trip-form__label">Budget</label>
+                <input type="text" class="add-trip-form__input" id="editTripBudget" placeholder="Budget" />
+              </div>
+            </div>
+            <div class="add-trip-form__col">
+              <div class="add-trip-form__field">
+                <label class="add-trip-form__label">Date to</label>
+                <input type="date" class="add-trip-form__input" id="editTripDateTo" required />
+              </div>
+              <div class="add-trip-form__field">
+                <label class="add-trip-form__label">Title</label>
+                <input type="text" class="add-trip-form__input" id="editTripTitle" placeholder="My trip" required />
+              </div>
+              <div class="add-trip-form__field">
+                <label class="add-trip-form__label">Tags</label>
+                <input type="text" class="add-trip-form__input" id="editTripTags" placeholder="Holiday" />
+              </div>
+              <div class="add-trip-form__field">
+                <label class="add-trip-form__label">Picture</label>
+                <button type="button" class="add-trip-form__input add-trip-form__picture-btn" id="editChoosePictureBtn">
+                  Choose the picture
+                </button>
+                <div class="add-trip-form__picture-preview" id="editPicturePreview">
+                  <span class="add-trip-form__preview-label">Picture preview:</span>
+                  <div class="add-trip-form__preview-container" id="editPreviewContainer">
+                    <span class="add-trip-form__no-preview">No picture selected</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="add-trip-form__row add-trip-form__row--full">
+            <div class="add-trip-form__field">
+              <label class="add-trip-form__label">Description</label>
+              <textarea class="add-trip-form__input add-trip-form__textarea" id="editTripDescription" placeholder="Description" rows="4"></textarea>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="popup__actions">
+        <button type="button" class="popup__button popup__button--secondary" id="editTripBackBtn">Back</button>
+        <button type="button" class="popup__button popup__button--primary" id="editTripSaveBtn">Save</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Picture Selection Popup -->
   <div class="popup-overlay" id="pictureSelectionPopupOverlay">
     <div class="popup popup--picture-selection">

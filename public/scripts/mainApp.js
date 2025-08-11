@@ -44,7 +44,7 @@ function trackActivity() {
 }
 
 // Events that indicate user activity
-const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+const activityEvents = ['mousedown', 'keypress', 'scroll', 'touchstart', 'click'];
 
 // Initialize activity tracking
 function initSessionManagement() {
@@ -162,6 +162,7 @@ const availablePictures = {
 };
 
 let selectedPicture = null;
+let pictureSelectionContext = 'add'; // 'add' or 'edit'
 // TODO: use a better counter
 let nextTripIdCounter = 5; // Start from 5 since we have 4 mock trips
 let filteredTrips = [...mockTrips];
@@ -277,6 +278,9 @@ function setupEventListeners() {
   // Trip type dropdown
   setupTripTypeDropdown();
   
+  // Event delegation for trip action buttons (prevents duplicate listeners)
+  tripsList?.addEventListener('click', handleTripActions);
+  
   // Handle window resize
   window.addEventListener('resize', handleResize);
 }
@@ -340,6 +344,28 @@ function updateTripTypeDisplay() {
   }
 }
 
+// Handle trip actions using event delegation
+function handleTripActions(e) {
+  // Check if clicked element is a trip details button
+  if (e.target.closest('.main-app__trip-details')) {
+    const button = e.target.closest('.main-app__trip-details');
+    const tripId = button.getAttribute('data-trip-id');
+    if (tripId) {
+      showTripDetails(tripId);
+    }
+    return;
+  }
+  
+  // Check if clicked element is a trip edit button
+  if (e.target.closest('.main-app__trip-edit')) {
+    const button = e.target.closest('.main-app__trip-edit');
+    const tripId = button.getAttribute('data-trip-id');
+    if (tripId) {
+      editTrip(tripId);
+    }
+    return;
+  }
+}
 
 function handleSearch(e) {
   e.preventDefault();
@@ -436,7 +462,7 @@ function renderTrips(trips) {
   tripsList.innerHTML = trips.map(trip => `
     <div class="main-app__trip-card">
       <img src="${trip.image}" alt="${trip.title}" class="main-app__trip-image" />
-      <div class="main-app__trip-details">
+      <div class="main-app__trip-content">
         <h3 class="main-app__trip-title">Title: ${trip.title}</h3>
         <p class="main-app__trip-date">Date: ${formatDate(trip.dateFrom)} - ${formatDate(trip.dateTo)}</p>
         <div class="main-app__trip-tags">
@@ -457,8 +483,8 @@ function renderTrips(trips) {
     </div>
   `).join('');
   
-  // Setup event listeners for trip action buttons
-  setupTripActionListeners();
+  // Event listeners are now handled via event delegation in setupEventListeners()
+  // No need to add listeners after each render
 }
 
 function formatDate(dateString) {
@@ -543,6 +569,11 @@ function hideAddTripPopup() {
 }
 
 function showPictureSelectionPopup() {
+  // Set context if not already set
+  if (pictureSelectionContext !== 'edit') {
+    pictureSelectionContext = 'add';
+  }
+  
   const overlay = document.getElementById('pictureSelectionPopupOverlay');
   const grid = document.getElementById('pictureSelectionGrid');
   
@@ -587,12 +618,20 @@ function setupPictureSelectionEventListeners() {
 }
 
 function hidePictureSelectionPopup() {
-  document.getElementById('pictureSelectionPopupOverlay').style.display = 'none';
+  const overlay = document.getElementById('pictureSelectionPopupOverlay');
+  overlay.style.display = 'none';
+  overlay.classList.remove('popup-overlay--top-priority');
+  // Reset context
+  pictureSelectionContext = 'add';
 }
 
 function selectPicture(key) {
   selectedPicture = key;
-  updatePicturePreview();
+  if (pictureSelectionContext === 'edit') {
+    updateEditPicturePreview();
+  } else {
+    updatePicturePreview();
+  }
   hidePictureSelectionPopup();
 }
 
@@ -682,8 +721,13 @@ function handleAddTripSubmit() {
 }
 
 function editTrip(tripId) {
-  // TODO: Implement popup for editing trip
-  alert(`Edit trip functionality will be implemented with popup. Trip ID: ${tripId}`);
+  const trip = mockTrips.find(t => t.id === tripId);
+  if (!trip) {
+    showPopup("Trip not found", "Error");
+    return;
+  }
+  
+  showEditTripPopup(trip);
 }
 
 function showPopup(message, title = "Information") {
@@ -720,6 +764,7 @@ function showPopup(message, title = "Information") {
 }
 
 function showTripDetails(tripId) {
+  console.log('📋 showTripDetails called with tripId:', tripId);
   const trip = mockTrips.find(t => t.id === tripId);
   if (!trip) {
     showPopup("Trip not found", "Error");
@@ -793,22 +838,184 @@ function hideTripDetailsPopup() {
   document.getElementById('tripDetailsPopupOverlay').style.display = 'none';
 }
 
-function setupTripActionListeners() {
-  // Setup listeners for all trip details buttons
-  const detailsButtons = document.querySelectorAll('.main-app__trip-details');
-  detailsButtons.forEach(button => {
-    button.addEventListener('click', (e) => {
-      const tripId = e.currentTarget.getAttribute('data-trip-id');
-      showTripDetails(tripId);
-    });
-  });
+// Edit Trip Popup Functions
+let currentEditTripId = null;
+
+function showEditTripPopup(trip) {
+  const overlay = document.getElementById('editTripPopupOverlay');
+  const form = document.getElementById('editTripForm');
   
-  // Setup listeners for all trip edit buttons  
-  const editButtons = document.querySelectorAll('.main-app__trip-edit');
-  editButtons.forEach(button => {
-    button.addEventListener('click', (e) => {
-      const tripId = e.currentTarget.getAttribute('data-trip-id');
-      editTrip(tripId);
-    });
-  });
+  // Store the trip ID for later use
+  currentEditTripId = trip.id;
+  
+  // Fill form with trip data
+  document.getElementById('editTripTitle').value = trip.title || '';
+  document.getElementById('editTripDateFrom').value = trip.dateFrom || '';
+  document.getElementById('editTripDateTo').value = trip.dateTo || '';
+  document.getElementById('editTripCountry').value = trip.country || '';
+  document.getElementById('editTripBudget').value = trip.budget || '';
+  document.getElementById('editTripTags').value = Array.isArray(trip.tags) ? trip.tags.join(', ') : (trip.tags || '');
+  document.getElementById('editTripDescription').value = trip.description || '';
+  
+  // Set trip type
+  const tripTypeSelect = document.getElementById('editTripType');
+  if (trip.tripType && Array.isArray(trip.tripType) && trip.tripType.length > 0) {
+    tripTypeSelect.value = trip.tripType[0];
+  } else {
+    tripTypeSelect.value = '';
+  }
+  
+  // Set picture
+  selectedPicture = findPictureKeyByUrl(trip.image) || null;
+  updateEditPicturePreview();
+  
+  // Show popup
+  overlay.style.display = 'flex';
+  
+  // Setup event listeners for popup elements
+  setupEditPopupEventListeners();
+}
+
+function setupEditPopupEventListeners() {
+  // Close popup
+  const closeBtn = document.getElementById('editTripPopupClose');
+  const backBtn = document.getElementById('editTripBackBtn');
+  const overlay = document.getElementById('editTripPopupOverlay');
+  
+  if (closeBtn) closeBtn.onclick = hideEditTripPopup;
+  if (backBtn) backBtn.onclick = hideEditTripPopup;
+  if (overlay) {
+    overlay.onclick = (e) => {
+      if (e.target === overlay) hideEditTripPopup();
+    };
+  }
+  
+  // Picture selection
+  const choosePictureBtn = document.getElementById('editChoosePictureBtn');
+  if (choosePictureBtn) {
+    choosePictureBtn.onclick = showEditPictureSelectionPopup;
+  }
+  
+  const form = document.getElementById('editTripForm');
+  const saveBtn = document.getElementById('editTripSaveBtn');
+  
+  if (form) {
+    form.onsubmit = (e) => {
+      e.preventDefault();
+      return false;
+    };
+  }
+  
+  if (saveBtn) {
+    saveBtn.onclick = (e) => {
+      e.preventDefault();
+      handleEditTripSave();
+    };
+  }
+}
+
+function hideEditTripPopup() {
+  document.getElementById('editTripPopupOverlay').style.display = 'none';
+  currentEditTripId = null;
+}
+
+function updateEditPicturePreview() {
+  const previewContainer = document.getElementById('editPreviewContainer');
+  if (!previewContainer) return;
+  
+  if (selectedPicture && availablePictures[selectedPicture]) {
+    const picture = availablePictures[selectedPicture];
+    previewContainer.innerHTML = `<img src="${picture.path}" alt="${picture.name}" class="add-trip-form__preview-image" />`;
+  } else {
+    previewContainer.innerHTML = '<span class="add-trip-form__no-preview">No picture selected</span>';
+  }
+}
+
+function handleEditTripSave() {
+  // Disable button to prevent double submission
+  const saveBtn = document.getElementById('editTripSaveBtn');
+  saveBtn.disabled = true;
+  saveBtn.textContent = 'Saving...';
+  
+  const reEnableButton = () => {
+    saveBtn.disabled = false;
+    saveBtn.textContent = 'Save';
+  };
+  
+  // Get form data
+  const title = document.getElementById('editTripTitle').value.trim();
+  const dateFrom = document.getElementById('editTripDateFrom').value;
+  const dateTo = document.getElementById('editTripDateTo').value;
+  const country = document.getElementById('editTripCountry').value.trim();
+  const tripType = document.getElementById('editTripType').value;
+  const tags = document.getElementById('editTripTags').value.trim();
+  const budget = document.getElementById('editTripBudget').value.trim();
+  const description = document.getElementById('editTripDescription').value.trim();
+  
+  // Basic validation
+  if (!title || !dateFrom || !dateTo || !country || !tripType) {
+    showPopup("Please fill in all required fields (Title, Date from, Date to, Country, Trip type).", "Validation Error");
+    reEnableButton();
+    return;
+  }
+  
+  if (new Date(dateFrom) >= new Date(dateTo)) {
+    showPopup("End date must be after start date.", "Validation Error");
+    reEnableButton();
+    return;
+  }
+  
+  // Find and update the trip
+  const tripIndex = mockTrips.findIndex(t => t.id === currentEditTripId);
+  if (tripIndex === -1) {
+    showPopup("Trip not found.", "Error");
+    reEnableButton();
+    return;
+  }
+  
+  // Update trip object
+  const updatedTrip = {
+    id: currentEditTripId,
+    title: title,
+    dateFrom: dateFrom,
+    dateTo: dateTo,
+    country: country,
+    tripType: [tripType],
+    tags: tags ? tags.split(',').map(tag => tag.trim()) : [],
+    budget: budget,
+    description: description,
+    image: selectedPicture ? availablePictures[selectedPicture].path : '/public/assets/mountains.jpg'
+  };
+  
+  mockTrips[tripIndex] = updatedTrip;
+  
+  // Update filtered trips and re-render
+  filteredTrips = [...mockTrips];
+  renderTrips(filteredTrips);
+  
+  // Hide popup and show success message
+  hideEditTripPopup();
+  showPopup(`Trip "${title}" has been updated successfully!`, "Success");
+  
+  // Re-enable button
+  reEnableButton();
+}
+
+// Helper functions for picture handling
+function findPictureKeyByUrl(url) {
+  for (const [key, picture] of Object.entries(availablePictures)) {
+    if (picture.path === url) {
+      return key;
+    }
+  }
+  return null;
+}
+
+function getPictureUrlByKey(key) {
+  return availablePictures[key] ? availablePictures[key].path : null;
+}
+
+function showEditPictureSelectionPopup() {
+  pictureSelectionContext = 'edit';
+  showPictureSelectionPopup();
 }

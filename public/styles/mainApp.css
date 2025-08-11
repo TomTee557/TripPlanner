@@ -270,7 +270,7 @@
   flex-shrink: 0;
 }
 
-.main-app__trip-details {
+.main-app__trip-content {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -350,8 +350,8 @@
   padding: 0.5rem;
   border-radius: 8px;
   cursor: pointer;
-  transition: background 0.3s;
   margin-right: 0.5rem;
+  transition: background 0.3s;
 }
 
 .main-app__trip-details:hover {
@@ -362,11 +362,6 @@
   width: 20px;
   height: 20px;
   opacity: 0.6;
-  transition: opacity 0.3s;
-}
-
-.main-app__trip-details:hover .main-app__trip-details-icon {
-  opacity: 1;
 }
 
 /* Trip Details Popup */
@@ -616,7 +611,7 @@
     align-self: center;
   }
 
-  .main-app__trip-details {
+  .main-app__trip-content {
     align-items: center;
   }
 
@@ -971,6 +966,17 @@
   .popup--picture-selection .popup__content {
     overflow-y: auto;
   }
+}
+
+/* Edit Trip Popup Styles */
+.popup--edit-trip {
+  width: 90%;
+  max-width: 800px;
+  max-height: 90vh;
+}
+
+.popup--edit-trip .popup__content {
+  overflow-y: auto;
 }
 
 .popup-overlay--top-priority {
