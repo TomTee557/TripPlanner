@@ -1,4 +1,5 @@
 import { postJson } from './fetch.js';
+import { currencies, currencyConverter } from './currencyConverter.js';
 
 // Session management configuration
 const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes in milliseconds
@@ -278,6 +279,9 @@ function setupEventListeners() {
   // Trip type dropdown
   setupTripTypeDropdown();
   
+  // Currency converter
+  setupCurrencyConverter();
+  
   // Event delegation for trip action buttons (prevents duplicate listeners)
   tripsList?.addEventListener('click', handleTripActions);
   
@@ -525,25 +529,11 @@ function setupPopupEventListeners() {
   
   if (closeBtn) closeBtn.onclick = hideAddTripPopup;
   if (backBtn) backBtn.onclick = hideAddTripPopup;
-  if (overlay) {
-    overlay.onclick = (e) => {
-      if (e.target === overlay) hideAddTripPopup();
-    };
-  }
   
   // Picture selection
   const choosePictureBtn = document.getElementById('choosePictureBtn');
   if (choosePictureBtn) {
     choosePictureBtn.onclick = showPictureSelectionPopup;
-  }
-  
-  // Currency converter (placeholder)
-  const currencyBtn = document.getElementById('currencyConverterBtn');
-  if (currencyBtn) {
-    currencyBtn.onclick = () => {
-      // TODO: Implement currency converter feature
-      showPopup("Currency converter feature coming soon", "Info");
-    };
   }
   
   const form = document.getElementById('addTripForm');
@@ -612,9 +602,6 @@ function setupPictureSelectionEventListeners() {
   
   closeBtn.onclick = hidePictureSelectionPopup;
   backBtn.onclick = hidePictureSelectionPopup;
-  overlay.onclick = (e) => {
-    if (e.target === overlay) hidePictureSelectionPopup();
-  };
 }
 
 function hidePictureSelectionPopup() {
@@ -756,11 +743,6 @@ function showPopup(message, title = "Information") {
 
   newPopupPrimaryBtn.onclick = closePopup;
   popupClose.onclick = closePopup;
-  popupOverlay.onclick = (e) => {
-    if (e.target === popupOverlay) {
-      closePopup();
-    }
-  };
 }
 
 function showTripDetails(tripId) {
@@ -827,11 +809,6 @@ function setupTripDetailsEventListeners() {
   
   if (closeBtn) closeBtn.onclick = hideTripDetailsPopup;
   if (backBtn) backBtn.onclick = hideTripDetailsPopup;
-  if (overlay) {
-    overlay.onclick = (e) => {
-      if (e.target === overlay) hideTripDetailsPopup();
-    };
-  }
 }
 
 function hideTripDetailsPopup() {
@@ -884,11 +861,6 @@ function setupEditPopupEventListeners() {
   
   if (closeBtn) closeBtn.onclick = hideEditTripPopup;
   if (backBtn) backBtn.onclick = hideEditTripPopup;
-  if (overlay) {
-    overlay.onclick = (e) => {
-      if (e.target === overlay) hideEditTripPopup();
-    };
-  }
   
   // Picture selection
   const choosePictureBtn = document.getElementById('editChoosePictureBtn');
@@ -1018,4 +990,251 @@ function getPictureUrlByKey(key) {
 function showEditPictureSelectionPopup() {
   pictureSelectionContext = 'edit';
   showPictureSelectionPopup();
+}
+
+// Currency Converter Functions
+function setupCurrencyConverter() {
+  // Initialize currency dropdowns
+  initializeCurrencyDropdowns();
+  
+  // Setup currency converter buttons
+  const currencyConverterBtns = document.querySelectorAll('.popup__button-currency-converter');
+  
+  currencyConverterBtns.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      showCurrencyConverterPopup();
+    });
+  });
+  
+  // Setup other currency converter popup event listeners
+  const currencyConverterPopup = document.getElementById('currencyConverterPopupOverlay');
+  const currencyConverterCloseBtn = document.getElementById('currencyConverterCloseBtn');
+  const currencyConverterBackBtn = document.getElementById('currencyConverterBackBtn');
+  const currencyConverterConvertBtn = document.getElementById('currencyConverterConvertBtn');
+  
+  // Close popup
+  currencyConverterCloseBtn?.addEventListener('click', closeCurrencyConverterPopup);
+  currencyConverterBackBtn?.addEventListener('click', closeCurrencyConverterPopup);
+  
+  // Convert button
+  currencyConverterConvertBtn?.addEventListener('click', handleCurrencyConversion);
+}
+
+function initializeCurrencyDropdowns() {
+  const fromDropdown = document.getElementById('fromCurrencyDropdown');
+  const toDropdown = document.getElementById('toCurrencyDropdown');
+  
+  setupCurrencyDropdown('from', fromDropdown);
+  setupCurrencyDropdown('to', toDropdown);
+  
+  // Set default currencies
+  setCurrencyValue('from', 'USD');
+  setCurrencyValue('to', 'PLN');
+}
+
+function setupCurrencyDropdown(type, dropdown) {
+  if (!dropdown) return;
+  
+  const searchInput = dropdown.querySelector(`#${type}CurrencySearch`);
+  const dropdownContent = dropdown.querySelector(`#${type}CurrencyContent`);
+  const arrow = dropdown.querySelector('.currency-converter__dropdown-arrow');
+  
+  // Populate options
+  populateCurrencyOptions(dropdownContent, type);
+  
+  // Toggle dropdown on search input click
+  searchInput?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleCurrencyDropdown(dropdown, true);
+  });
+  
+  // Toggle dropdown on arrow click
+  arrow?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleCurrencyDropdown(dropdown);
+  });
+  
+  // Search functionality
+  searchInput?.addEventListener('input', (e) => {
+    filterCurrencyOptions(dropdownContent, e.target.value);
+    // Open dropdown when user types
+    if (e.target.value.trim() && !dropdown.classList.contains('currency-converter__dropdown--open')) {
+      toggleCurrencyDropdown(dropdown, true);
+    }
+  });
+  
+  // Close dropdown when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!dropdown.contains(e.target)) {
+      toggleCurrencyDropdown(dropdown, false);
+    }
+  });
+}
+
+function populateCurrencyOptions(container, type) {
+  if (!container) return;
+  
+  container.innerHTML = '';
+  
+  currencies.forEach(currency => {
+    const option = document.createElement('div');
+    option.className = 'currency-converter__option';
+    option.dataset.code = currency.code;
+    option.innerHTML = `
+      <span class="currency-converter__flag">${currency.flag}</span>
+      <span class="currency-converter__code">${currency.code}</span>
+      <span class="currency-converter__name">${currency.name}</span>
+    `;
+    
+    option.addEventListener('click', () => {
+      selectCurrency(type, currency);
+      toggleCurrencyDropdown(container.closest('.currency-converter__dropdown'), false);
+    });
+    
+    container.appendChild(option);
+  });
+}
+
+function toggleCurrencyDropdown(dropdown, forceOpen = null) {
+  const isOpen = dropdown.classList.contains('currency-converter__dropdown--open');
+  const shouldOpen = forceOpen !== null ? forceOpen : !isOpen;
+  
+  if (shouldOpen) {
+    dropdown.classList.add('currency-converter__dropdown--open');
+  } else {
+    dropdown.classList.remove('currency-converter__dropdown--open');
+  }
+}
+
+function filterCurrencyOptions(container, searchTerm) {
+  if (!container) return;
+  
+  const options = container.querySelectorAll('.currency-converter__option');
+  const term = searchTerm.toLowerCase();
+  
+  options.forEach(option => {
+    const code = option.dataset.code.toLowerCase();
+    const name = option.querySelector('.currency-converter__name').textContent.toLowerCase();
+    const matches = code.includes(term) || name.includes(term);
+    
+    option.style.display = matches ? 'flex' : 'none';
+  });
+}
+
+function selectCurrency(type, currency) {
+  const searchInput = document.getElementById(`${type}CurrencySearch`);
+  const hiddenInput = document.getElementById(`${type}CurrencyValue`);
+  
+  if (searchInput && hiddenInput) {
+    searchInput.value = `${currency.flag} ${currency.code} - ${currency.name}`;
+    hiddenInput.value = currency.code;
+    
+    // Update selected option styling
+    updateSelectedCurrencyOption(type, currency.code);
+  }
+}
+
+function setCurrencyValue(type, currencyCode) {
+  const currency = currencies.find(c => c.code === currencyCode);
+  if (currency) {
+    selectCurrency(type, currency);
+  }
+}
+
+function updateSelectedCurrencyOption(type, selectedCode) {
+  const container = document.getElementById(`${type}CurrencyContent`);
+  if (!container) return;
+  
+  const options = container.querySelectorAll('.currency-converter__option');
+  options.forEach(option => {
+    option.classList.remove('currency-converter__option--selected');
+    if (option.dataset.code === selectedCode) {
+      option.classList.add('currency-converter__option--selected');
+    }
+  });
+}
+
+async function handleCurrencyConversion() {
+  const fromCurrency = document.getElementById('fromCurrencyValue').value;
+  const toCurrency = document.getElementById('toCurrencyValue').value;
+  const value = parseFloat(document.getElementById('currencyValue').value);
+  const resultInput = document.getElementById('currencyResult');
+  const rateDisplay = document.getElementById('currencyRate');
+  const loadingDisplay = document.getElementById('currencyLoading');
+  const convertBtn = document.getElementById('currencyConverterConvertBtn');
+  
+  // Validation
+  if (!fromCurrency || !toCurrency) {
+    showPopup("Please select both currencies", "Error");
+    return;
+  }
+  
+  if (!value || value <= 0) {
+    showPopup("Please enter a valid amount", "Error");
+    return;
+  }
+  
+  // Show loading
+  loadingDisplay.style.display = 'flex';
+  convertBtn.disabled = true;
+  resultInput.value = '';
+  rateDisplay.classList.remove('currency-converter__rate--visible');
+  
+  try {
+    const result = await currencyConverter.convert(fromCurrency, toCurrency, value);
+    
+    // Display result
+    resultInput.value = `${result.convertedAmount} ${toCurrency}`;
+    
+    // Display exchange rate
+    rateDisplay.innerHTML = `
+      <div>1 ${fromCurrency} = <span class="currency-converter__rate-value">${result.exchangeRate} ${toCurrency}</span></div>
+      <div style="font-size: 0.8rem; margin-top: 0.25rem;">Last updated: ${result.lastUpdate.toLocaleString()}</div>
+    `;
+    rateDisplay.classList.add('currency-converter__rate--visible');
+    
+  } catch (error) {
+    showPopup(error.message, "Conversion Error");
+    resultInput.value = '';
+  } finally {
+    loadingDisplay.style.display = 'none';
+    convertBtn.disabled = false;
+  }
+}
+
+function showCurrencyConverterPopup() {
+  const overlay = document.getElementById('currencyConverterPopupOverlay');
+  
+  if (overlay) {
+    // Remove hidden class first (it has !important)
+    overlay.classList.remove('popup-overlay--hidden');
+    overlay.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    
+    // Reset form
+    document.getElementById('currencyValue').value = '';
+    document.getElementById('currencyResult').value = '';
+    document.getElementById('currencyRate').classList.remove('currency-converter__rate--visible');
+    
+    // Focus on value input
+    setTimeout(() => {
+      document.getElementById('currencyValue')?.focus();
+    }, 100);
+  }
+}
+
+function closeCurrencyConverterPopup() {
+  const overlay = document.getElementById('currencyConverterPopupOverlay');
+  if (overlay) {
+    overlay.style.display = 'none';
+    overlay.classList.add('popup-overlay--hidden');
+    document.body.style.overflow = '';
+    
+    // Close any open dropdowns
+    document.querySelectorAll('.currency-converter__dropdown').forEach(dropdown => {
+      dropdown.classList.remove('currency-converter__dropdown--open');
+    });
+  }
 }

@@ -225,7 +225,7 @@
       </div>
       <div class="popup__actions">
         <button type="button" class="popup__button popup__button--secondary" id="addTripBackBtn">Back</button>
-        <!-- <button type="button" class="popup__button popup__button--primary" id="currencyConverterBtn">Currency converter</button> -->
+        <button type="button" class="popup__button popup__button--primary popup__button-currency-converter" id="addTripCurrencyConverterBtn">Currency converter</button>
         <button type="button" class="popup__button popup__button--primary" id="addTripSubmitBtn">Add trip</button>
       </div>
     </div>
@@ -305,6 +305,7 @@
       </div>
       <div class="popup__actions">
         <button type="button" class="popup__button popup__button--secondary" id="editTripBackBtn">Back</button>
+        <button type="button" class="popup__button popup__button--primary popup__button-currency-converter" id="editTripCurrencyConverterBtn">Currency converter</button>
         <button type="button" class="popup__button popup__button--primary" id="editTripSaveBtn">Save</button>
       </div>
     </div>
@@ -342,6 +343,90 @@
       </div>
       <div class="popup__actions">
         <button type="button" class="popup__button popup__button--secondary" id="tripDetailsBackBtn">Back</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Currency Converter Popup -->
+  <div class="popup-overlay popup-overlay--hidden" id="currencyConverterPopupOverlay">
+    <div class="popup popup--currency-converter">
+      <div class="popup__header">
+        <h2 class="popup__title">Currency Converter</h2>
+        <button type="button" class="popup__close" id="currencyConverterCloseBtn">&times;</button>
+      </div>
+      <div class="popup__content">
+        <form class="popup__form" id="currencyConverterForm">
+          <div class="currency-converter">
+            <div class="currency-converter__row">
+              <div class="currency-converter__field">
+                <label class="currency-converter__label">From:</label>
+                <div class="currency-converter__dropdown" id="fromCurrencyDropdown">
+                  <input type="text" 
+                         class="currency-converter__input currency-converter__search" 
+                         id="fromCurrencySearch" 
+                         placeholder="Search currency..."
+                         autocomplete="off" />
+                  <div class="currency-converter__dropdown-arrow">▼</div>
+                  <div class="currency-converter__dropdown-content" id="fromCurrencyContent">
+                    <!-- Currency options will be populated by JavaScript -->
+                  </div>
+                  <input type="hidden" id="fromCurrencyValue" name="fromCurrency" />
+                </div>
+              </div>
+              
+              <div class="currency-converter__field">
+                <label class="currency-converter__label">To:</label>
+                <div class="currency-converter__dropdown" id="toCurrencyDropdown">
+                  <input type="text" 
+                         class="currency-converter__input currency-converter__search" 
+                         id="toCurrencySearch" 
+                         placeholder="Search currency..."
+                         autocomplete="off" />
+                  <div class="currency-converter__dropdown-arrow">▼</div>
+                  <div class="currency-converter__dropdown-content" id="toCurrencyContent">
+                    <!-- Currency options will be populated by JavaScript -->
+                  </div>
+                  <input type="hidden" id="toCurrencyValue" name="toCurrency" />
+                </div>
+              </div>
+            </div>
+
+            <div class="currency-converter__row">
+              <div class="currency-converter__field currency-converter__field--value">
+                <label class="currency-converter__label">Value:</label>
+                <input type="number" 
+                       class="currency-converter__input currency-converter__value" 
+                       id="currencyValue" 
+                       name="value" 
+                       placeholder="Enter amount..." 
+                       min="0" 
+                       step="0.01" />
+              </div>
+              
+              <div class="currency-converter__field currency-converter__field--result">
+                <label class="currency-converter__label">Result:</label>
+                <input type="text" 
+                       class="currency-converter__input currency-converter__result" 
+                       id="currencyResult" 
+                       placeholder="Conversion result..." 
+                       readonly />
+              </div>
+            </div>
+
+            <div class="currency-converter__rate" id="currencyRate">
+              <!-- Exchange rate will be displayed here -->
+            </div>
+
+            <div class="currency-converter__loading" id="currencyLoading" style="display: none;">
+              <div class="currency-converter__spinner"></div>
+              <span>Converting...</span>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="popup__actions">
+        <button type="button" class="popup__button popup__button--secondary" id="currencyConverterBackBtn">Back</button>
+        <button type="button" class="popup__button popup__button--primary" id="currencyConverterConvertBtn">Convert</button>
       </div>
     </div>
   </div>

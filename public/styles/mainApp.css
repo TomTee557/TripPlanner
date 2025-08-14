@@ -629,6 +629,11 @@
   display: none;
 }
 
+/* Hidden popup overlay */
+.popup-overlay--hidden {
+  display: none !important;
+}
+
 /* Generic Popup Styles */
 .popup-overlay {
   position: fixed;
@@ -755,6 +760,10 @@
 .popup__button--danger {
   background: #dc3545;
   color: white;
+}
+
+.popup__button-currency-converter {
+  margin-right: 24px
 }
 
 .popup__button--danger:hover {
@@ -981,4 +990,206 @@
 
 .popup-overlay--top-priority {
   z-index: 2000;
+}
+
+/* Currency Converter Popup Styles */
+.popup--currency-converter {
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+}
+
+.currency-converter {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.currency-converter__row {
+  display: flex;
+  gap: 1rem;
+}
+
+.currency-converter__field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.currency-converter__field--value,
+.currency-converter__field--result {
+  flex: 1;
+}
+
+.currency-converter__label {
+  font-weight: 600;
+  color: #333;
+  font-size: 0.9rem;
+}
+
+.currency-converter__input {
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: white;
+  transition: border-color 0.2s ease-out;
+}
+
+.currency-converter__input:focus {
+  outline: none;
+  border-color: #2979ff;
+  box-shadow: 0 0 0 2px rgba(41, 121, 255, 0.1);
+}
+
+.currency-converter__input:disabled,
+.currency-converter__result {
+  background: #f8f9fa;
+  color: #666;
+  cursor: not-allowed;
+}
+
+.currency-converter__result {
+  font-weight: 600;
+  color: #2979ff;
+}
+
+/* Dropdown Styles for Currency Converter */
+.currency-converter__dropdown {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.currency-converter__search {
+  padding-right: 2.5rem;
+  cursor: pointer;
+}
+
+.currency-converter__dropdown-arrow {
+  font-size: 0.7rem;
+  color: #666;
+  cursor: pointer;
+  transition: transform 0.2s ease-out;
+  padding: 0.25rem;
+  z-index: 1;
+  padding-left: 0.75rem;
+}
+
+.currency-converter__dropdown--open .currency-converter__dropdown-arrow {
+  transform: rotate(180deg);
+}
+
+.currency-converter__dropdown-content {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #ddd;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+  display: none;
+}
+
+.currency-converter__dropdown--open .currency-converter__dropdown-content {
+  display: block;
+}
+
+.currency-converter__option {
+  padding: 0.75rem;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: background 0.2s ease-out;
+}
+
+.currency-converter__option:hover {
+  background: #f8f9fa;
+}
+
+.currency-converter__option:last-child {
+  border-bottom: none;
+}
+
+.currency-converter__option--selected {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.currency-converter__flag {
+  font-size: 1.1rem;
+}
+
+.currency-converter__code {
+  font-weight: 600;
+  color: #333;
+  min-width: 40px;
+}
+
+.currency-converter__name {
+  color: #666;
+  font-size: 0.85rem;
+}
+
+.currency-converter__rate {
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  text-align: center;
+  color: #666;
+  font-size: 0.9rem;
+  border: 1px solid #e0e0e0;
+  display: none;
+}
+
+.currency-converter__rate--visible {
+  display: block;
+}
+
+.currency-converter__rate-value {
+  color: #2979ff;
+  font-weight: 600;
+}
+
+.currency-converter__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  color: #666;
+}
+
+.currency-converter__spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #e0e0e0;
+  border-top: 2px solid #2979ff;
+  border-radius: 50%;
+  animation: currency-spin 1s linear infinite;
+}
+
+@keyframes currency-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .currency-converter__row {
+    flex-direction: column;
+  }
+  
+  .popup--currency-converter {
+    width: 95%;
+    margin: 1rem;
+  }
 }
