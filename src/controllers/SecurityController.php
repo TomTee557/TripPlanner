@@ -24,12 +24,11 @@ class SecurityController extends AppController {
             return $this->render('auth');
         }
 
-        $email = strtolower(trim($_POST['email'] ?? '')); // Normalizacja do małych liter
+        $email = strtolower(trim($_POST['email'] ?? ''));
         $password = $_POST['password'] ?? '';
 
         $users = $this->getMockUsers();
         foreach ($users as $user) {
-            // Porównywanie bez uwzględniania wielkości liter
             if (strtolower($user->email) === $email && $user->password === $password) {
                 // Set user session
                 $_SESSION['user_logged_in'] = true;
@@ -43,7 +42,7 @@ class SecurityController extends AppController {
             }
         }
 
-        // Błąd logowania – przekierowanie z komunikatem
+        // Login error – redirect with message
         $_SESSION['messages'] = ['Wrong email or password'];
         $_SESSION['formType'] = 'login';
         header('Location: /auth');
@@ -65,12 +64,11 @@ class SecurityController extends AppController {
         $surname = trim($_POST['surname'] ?? '');
         $password = $_POST['regPassword'] ?? '';
 
-        // Normalizacja email do małych liter przed sprawdzeniem
+        // email to lowercase before checking
         $emailLowerCase = strtolower($email);
         
         $users = $this->getMockUsers();
         foreach ($users as $user) {
-            // Porównywanie bez uwzględniania wielkości liter
             if (strtolower($user->email) === $emailLowerCase) {
                 $_SESSION['messages'] = ['User with the specified email address already exists'];
                 $_SESSION['formType'] = 'register';
@@ -79,11 +77,11 @@ class SecurityController extends AppController {
             }
         }
 
-        // Dodaj użytkownika - zapis z oryginalnym emailem
+        // Add user - save with original email
         $users[] = new User($name, $surname, $email, $password);
         $_SESSION['mock_users'] = $users;
 
-        // Po rejestracji komunikat na panelu logowania
+        // After registration message on login panel
         $_SESSION['messages'] = ['Registration successful! Now please log in.'];
         $_SESSION['formType'] = 'login';
         header('Location: /auth');
@@ -118,7 +116,6 @@ class SecurityController extends AppController {
         
         $_SESSION['formType'] = 'login';
         
-        // Always redirect using PHP header
         header('Location: /auth');
         exit;
     }

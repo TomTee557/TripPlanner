@@ -1,86 +1,6 @@
-import { postJson } from './fetch.js';
-import { currencies, currencyConverter } from './currencyConverter.js';
-
-// Session management configuration
-const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes in milliseconds
-let sessionTimer;
-let lastActivity = Date.now();
-
-// Session timeout management
-function resetSessionTimer() {
-  lastActivity = Date.now();
-  clearTimeout(sessionTimer);
-  sessionTimer = setTimeout(logoutDueToInactivity, SESSION_TIMEOUT);
-}
-
-function logoutDueToInactivity() {
-  showPopup("Your session will expire in 30 seconds due to inactivity. You will be automatically logged out.", "Session Expiring");
-  
-  // Show countdown popup for 30 seconds then logout
-  setTimeout(() => {
-    performLogoutViaForm('inactivity');
-  }, 30000);
-}
-
-function performLogoutViaForm(reason = 'manual') {
-  // Create a form element dynamically - same as logout button
-  const form = document.createElement('form');
-  form.method = 'POST';
-  form.action = '/logout';
-  form.style.display = 'none';
-  
-  const reasonInput = document.createElement('input');
-  reasonInput.type = 'hidden';
-  reasonInput.name = 'logout_reason';
-  reasonInput.value = reason;
-  form.appendChild(reasonInput);
-  
-  document.body.appendChild(form);
-  form.submit();
-}
-
-
-function trackActivity() {
-  resetSessionTimer();
-}
-
-// Events that indicate user activity
-const activityEvents = ['mousedown', 'keypress', 'scroll', 'touchstart', 'click'];
-
-// Initialize activity tracking
-function initSessionManagement() {
-  // Start the timer
-  resetSessionTimer();
-  
-  activityEvents.forEach(event => {
-    document.addEventListener(event, trackActivity, true);
-  });
-  
-  // Handle page visibility change - tab switching
-  document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) {
-      resetSessionTimer();
-    }
-  });
-  
-  // Handle browser/tab close
-  window.addEventListener('beforeunload', () => {
-    // Create form for logout
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = '/logout';
-    
-    const reasonInput = document.createElement('input');
-    reasonInput.name = 'logout_reason';
-    reasonInput.value = 'browser_close';
-    form.appendChild(reasonInput);
-    
-    // For beforeunload, use sendBeacon as backup
-    const formData = new FormData();
-    formData.append('logout_reason', 'browser_close');
-    navigator.sendBeacon('/logout', formData);
-  });
-}
+import { currencies, currencyConverter } from '/public/scripts/infrastructure/currencyConverterLogic.js';
+import { availablePictures, tripTypeLabels, PictureSelectionContext, BREAKPOINTS } from '/public/scripts/consts.js';
+import { inactivityTimer } from '/public/scripts/helpers/InactivityTimer.js';
 
 // Mock data for trips
 const mockTrips = [
@@ -134,53 +54,14 @@ const mockTrips = [
   }
 ];
 
-// Available pictures for trips
-const availablePictures = {
-  'mountains': {
-    name: 'Mountains',
-    path: '/public/assets/mountains.jpg'
-  },
-  'mountains-2': {
-    name: 'Mountains 2',
-    path: '/public/assets/mountains-2.jpg'
-  },
-  'oriental': {
-    name: 'Oriental',
-    path: '/public/assets/oriental.jpg'
-  },
-  'eiffel-tower': {
-    name: 'Eiffel Tower',
-    path: '/public/assets/eiffel-tower.jpg'
-  },
-  'mountain-3': {
-    name: 'Mountains 3',
-    path: '/public/assets/mountains-3.jpg'
-  },
-   'colosseum': {
-    name: 'Colosseum',
-    path: '/public/assets/colosseum.jpg'
-  }
-};
-
 let selectedPicture = null;
-let pictureSelectionContext = 'add'; // 'add' or 'edit'
+let pictureSelectionContext = PictureSelectionContext.ADD;
 // TODO: use a better counter
 let nextTripIdCounter = 5; // Start from 5 since we have 4 mock trips
 let filteredTrips = [...mockTrips];
 
 // DOM elements - will be initialized after DOM is loaded
 let searchPanel, showSearchBtn, closeSearchBtn, searchForm, clearFiltersBtn, tripsList, addTripBtn;
-
-// Trip type mapping for display
-const tripTypeLabels = {
-  'city-break': 'City Break',
-  'mountain': 'Mountain',
-  'exotic': 'Exotic',
-  'last-minute': 'Last Minute',
-  'family': 'Family',
-  'trekking': 'Trekking',
-  'cultural': 'Cultural'
-};
 
 // Initialize the app
 document.addEventListener('DOMContentLoaded', function() {
@@ -199,7 +80,7 @@ document.addEventListener('DOMContentLoaded', function() {
   setupEventListeners();
   
   // Show search panel on desktop by default, hide on mobile
-  if (window.innerWidth > 1000) {
+  if (window.innerWidth > BREAKPOINTS.MOBILE) {
     searchPanel.classList.remove('main-app__search-panel--hidden');
     searchPanel.style.display = 'flex';
     if (showSearchBtn) {
@@ -212,7 +93,9 @@ document.addEventListener('DOMContentLoaded', function() {
       showSearchBtn.style.display = 'block';
     }
   }
-  initSessionManagement();
+  // Initialize session management with inactivity timer
+  inactivityTimer.onShowWarning = showPopup;
+  inactivityTimer.init();
 });
 
 // Clock functionality
@@ -262,7 +145,7 @@ function setupEventListeners() {
   closeSearchBtn?.addEventListener('click', () => {
     searchPanel.classList.add('main-app__search-panel--hidden');
     searchPanel.style.display = 'none';
-    if (window.innerWidth <= 1000) {
+    if (window.innerWidth <= BREAKPOINTS.MOBILE) {
       showSearchBtn.style.display = 'block';
     }
   });
@@ -291,7 +174,7 @@ function setupEventListeners() {
 
 // Handle window resize
 function handleResize() {
-  if (window.innerWidth > 1000) {
+  if (window.innerWidth > BREAKPOINTS.MOBILE) {
     searchPanel.classList.remove('main-app__search-panel--hidden');
     searchPanel.style.display = 'flex';
     if (showSearchBtn) {
@@ -433,7 +316,7 @@ function handleSearch(e) {
   renderTrips(filteredTrips);
   
   // Hide search panel on mobile after search
-  if (window.innerWidth <= 1000) {
+  if (window.innerWidth <= BREAKPOINTS.MOBILE) {
     searchPanel.classList.add('main-app__search-panel--hidden');
     searchPanel.style.display = 'none';
     showSearchBtn.style.display = 'block';
@@ -478,7 +361,7 @@ function renderTrips(trips) {
       </div>
       <div class="main-app__trip-actions">
         <button class="main-app__trip-details" data-trip-id="${trip.id}" title="Show details">
-          <img src="/public/assets/more_vert.png" alt="Details" class="main-app__trip-details-icon" />
+          <img src="/public/assets/search.png" alt="Details" class="main-app__trip-details-icon" />
         </button>
         <button class="main-app__trip-edit" data-trip-id="${trip.id}" title="Edit trip">
           <img src="/public/assets/edit.png" alt="Edit" class="main-app__trip-edit-icon" />
@@ -560,8 +443,8 @@ function hideAddTripPopup() {
 
 function showPictureSelectionPopup() {
   // Set context if not already set
-  if (pictureSelectionContext !== 'edit') {
-    pictureSelectionContext = 'add';
+  if (pictureSelectionContext !== PictureSelectionContext.EDIT) {
+    pictureSelectionContext = PictureSelectionContext.ADD;
   }
   
   const overlay = document.getElementById('pictureSelectionPopupOverlay');
@@ -609,12 +492,12 @@ function hidePictureSelectionPopup() {
   overlay.style.display = 'none';
   overlay.classList.remove('popup-overlay--top-priority');
   // Reset context
-  pictureSelectionContext = 'add';
+  pictureSelectionContext = PictureSelectionContext.ADD;
 }
 
 function selectPicture(key) {
   selectedPicture = key;
-  if (pictureSelectionContext === 'edit') {
+  if (pictureSelectionContext === PictureSelectionContext.EDIT) {
     updateEditPicturePreview();
   } else {
     updatePicturePreview();
@@ -983,12 +866,8 @@ function findPictureKeyByUrl(url) {
   return null;
 }
 
-function getPictureUrlByKey(key) {
-  return availablePictures[key] ? availablePictures[key].path : null;
-}
-
 function showEditPictureSelectionPopup() {
-  pictureSelectionContext = 'edit';
+  pictureSelectionContext = PictureSelectionContext.EDIT;
   showPictureSelectionPopup();
 }
 
