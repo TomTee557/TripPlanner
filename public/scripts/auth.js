@@ -3,7 +3,7 @@ const registerForm = document.getElementById('registerForm');
 const showLogin = document.getElementById('showLogin');
 const showRegister = document.getElementById('showRegister');
 
-// SWITCH - Widoków
+// VIEW SWITCHING
 showLogin?.addEventListener('click', e => {
   e.preventDefault();
   registerForm.classList.add('auth__section--hidden');
@@ -36,12 +36,18 @@ function isOnlyLetters(text) {
   return /^[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ]+$/.test(text);
 }
 
-// regex do walidacji emaila
+// Email validation regex
 function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
 }
 
-// WALIDACJA LOGOWANIA
+// Password strength validation
+function isValidPassword(password) {
+  // At least 4 characters
+  return password.length >= 4;
+}
+
+// LOGIN VALIDATION
 loginForm?.addEventListener('submit', e => {
   clearErrorMessage('login');
   const emailInput = document.getElementById('email');
@@ -69,7 +75,7 @@ loginForm?.addEventListener('submit', e => {
   }
 });
 
-// WALIDACJA REJESTRACJI
+// REGISTRATION VALIDATION
 registerForm?.addEventListener('submit', e => {
   clearErrorMessage('register');
   const name = document.getElementById('name');
@@ -82,40 +88,60 @@ registerForm?.addEventListener('submit', e => {
   let valid = true;
   let errorMessage = '';
 
+  // Clear previous error styling
   inputs.forEach(input => {
     input.classList.remove('auth__input--error');
+  });
+
+  // Check for empty fields
+  inputs.forEach(input => {
     if (!input.value.trim()) {
       input.classList.add('auth__input--error');
       valid = false;
     }
   });
 
+  // Validate name - only letters
   if (name.value.trim() && !isOnlyLetters(name.value.trim())) {
     name.classList.add('auth__input--error');
     valid = false;
     errorMessage = 'Name must contain only letters';
   }
 
+  // Validate surname - only letters
   if (surname.value.trim() && !isOnlyLetters(surname.value.trim())) {
     surname.classList.add('auth__input--error');
     valid = false;
     errorMessage = 'Surname must contain only letters';
   }
 
+  // Validate email format
   if (email.value.trim() && !isValidEmail(email.value.trim())) {
     email.classList.add('auth__input--error');
     valid = false;
     errorMessage = 'Please enter a valid email address';
   }
 
+  // Validate password strength
+  if (password.value && !isValidPassword(password.value)) {
+    password.classList.add('auth__input--error');
+    valid = false;
+    errorMessage = 'Password must be at least 4 characters long';
+  }
+
+  // Validate password confirmation
   if (password.value !== confirm.value) {
     confirm.classList.add('auth__input--error');
     valid = false;
     errorMessage = 'Passwords must be identical';
   }
 
+  // Prevent form submission if validation fails
   if (!valid) {
     e.preventDefault();
     showErrorMessage(errorMessage || 'Please fill in all fields correctly', 'register');
   }
+  
+  // If validation passes, form will be submitted to PHP backend
+  // SecurityController::register() will handle database operations and return appropriate messages
 });

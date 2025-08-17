@@ -18,7 +18,7 @@ class Router {
     public static function run($url) {
         $method = $_SERVER['REQUEST_METHOD'];
         $action = explode("/", $url)[0] ?: 'auth';
-
+        
         if (!isset(self::$routes[$method][$action])) {
             die("404 Not Found");
         }

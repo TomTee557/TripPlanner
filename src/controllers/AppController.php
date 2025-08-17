@@ -15,7 +15,7 @@ class AppController {
 
     protected function isPost(): bool
     {
-        return $this->request === 'POST';
+        return $_SERVER['REQUEST_METHOD'] === 'POST';
     }
 
     protected function render(string $template = null, array $variables = [])

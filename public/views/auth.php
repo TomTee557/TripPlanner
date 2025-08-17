@@ -12,7 +12,7 @@ if (empty($formType) && !empty($_SESSION['formType'])) {
     $formType = $_SESSION['formType'];
     unset($_SESSION['formType']);
 }
-?><?php /** @var array $messages */ ?>
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -31,7 +31,7 @@ if (empty($formType) && !empty($_SESSION['formType'])) {
     <div class="auth__container">
       <img src="/public/assets/logo.png" alt="Trip Planner Logo" class="auth__logo"/>
 
-      <!-- FORMULARZ LOGOWANIA -->
+      <!-- LOGIN FORM -->
       <form class="auth__form" id="loginForm" method="POST" action="/login">
         <div class="auth__section" id="loginSection">
           <h2 class="auth__title">Log in</h2>
@@ -65,7 +65,7 @@ if (empty($formType) && !empty($_SESSION['formType'])) {
         </div>
       </form>
 
-      <!-- FORMULARZ REJESTRACJI -->
+      <!-- REGISTRATION FORM -->
       <form class="auth__form auth__section--hidden" id="registerForm" method="POST" action="/register">
         <div class="auth__section" id="registerSection">
           <h2 class="auth__title">Register</h2>
@@ -86,7 +86,7 @@ if (empty($formType) && !empty($_SESSION['formType'])) {
 
           <button type="submit" class="auth__button auth__button--register">Register</button>
           <p class="auth__switch"><a href="#" id="showLogin">Back to log in</a></p>
-          <!-- Komunikaty rejestracji -->
+          <!-- Registration messages -->
           <div id="registerError" class="auth__message">
             <?php if (!empty($messages) && ($formType ?? '') === 'register'): ?>
               <?php foreach ($messages as $msg): ?>
@@ -103,7 +103,7 @@ if (empty($formType) && !empty($_SESSION['formType'])) {
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       <?php if (($formType ?? '') === 'register'): ?>
-        // Jeśli formType to 'register', pokaż formularz rejestracji
+        // If formType is 'register', show registration form
         document.getElementById('registerForm').classList.remove('auth__section--hidden');
         document.getElementById('loginForm').classList.add('auth__section--hidden');
       <?php endif; ?>

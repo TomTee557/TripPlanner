@@ -2,16 +2,15 @@
 
 require_once 'AppController.php';
 require_once 'src/models/User.php';
+require_once 'src/repository/UserRepository.php';
+require_once 'src/helpers/PasswordHelper.php';
 
 class SecurityController extends AppController {
 
-    private function &getMockUsers() {
-        if (!isset($_SESSION['mock_users'])) {
-            $_SESSION['mock_users'] = [
-                new User('Admin', 'Admin', 'admin@admin.com', 'admin')
-            ];
-        }
-        return $_SESSION['mock_users'];
+    private $userRepository;
+    
+    public function __construct() {
+        $this->userRepository = new UserRepository();
     }
 
     public function login()
@@ -27,19 +26,25 @@ class SecurityController extends AppController {
         $email = strtolower(trim($_POST['email'] ?? ''));
         $password = $_POST['password'] ?? '';
 
-        $users = $this->getMockUsers();
-        foreach ($users as $user) {
-            if (strtolower($user->email) === $email && $user->password === $password) {
+        try {
+            $user = $this->userRepository->findByEmail($email);
+            
+            if ($user && PasswordHelper::verify($password, $user->password)) {
                 // Set user session
                 $_SESSION['user_logged_in'] = true;
                 $_SESSION['user_email'] = $user->email;
                 $_SESSION['user_name'] = $user->name;
-                $_SESSION['last_activity'] = time(); // Set initial activity time
+                $_SESSION['last_activity'] = time();
                 
-                // Redirect to mainApp instead of rendering directly
                 header('Location: /mainApp');
                 exit;
             }
+        } catch (Exception $e) {
+            error_log("Database error during login: " . $e->getMessage());
+            $_SESSION['messages'] = ['Database connection error. Please try again later.'];
+            $_SESSION['formType'] = 'login';
+            header('Location: /auth');
+            exit;
         }
 
         // Login error – redirect with message
@@ -64,28 +69,30 @@ class SecurityController extends AppController {
         $surname = trim($_POST['surname'] ?? '');
         $password = $_POST['regPassword'] ?? '';
 
-        // email to lowercase before checking
-        $emailLowerCase = strtolower($email);
-        
-        $users = $this->getMockUsers();
-        foreach ($users as $user) {
-            if (strtolower($user->email) === $emailLowerCase) {
+        // Hash password before saving to database
+        $hashedPassword = PasswordHelper::hash($password);
+
+        try {
+            $newUser = new User($name, $surname, $email, $hashedPassword);
+            $this->userRepository->save($newUser);
+            
+            // After registration message on login panel
+            $_SESSION['messages'] = ['Registration successful! Now please log in.'];
+            $_SESSION['formType'] = 'login';
+            header('Location: /auth');
+            exit;
+            
+        } catch (Exception $e) {
+            if (strpos($e->getMessage(), 'already exists') !== false) {
                 $_SESSION['messages'] = ['User with the specified email address already exists'];
-                $_SESSION['formType'] = 'register';
-                header('Location: /auth');
-                exit;
+            } else {
+                error_log("Database error during registration: " . $e->getMessage());
+                $_SESSION['messages'] = ['Database connection error. Please try again later.'];
             }
+            $_SESSION['formType'] = 'register';
+            header('Location: /auth');
+            exit;
         }
-
-        // Add user - save with original email
-        $users[] = new User($name, $surname, $email, $password);
-        $_SESSION['mock_users'] = $users;
-
-        // After registration message on login panel
-        $_SESSION['messages'] = ['Registration successful! Now please log in.'];
-        $_SESSION['formType'] = 'login';
-        header('Location: /auth');
-        exit;
     }
 
     public function logout()

@@ -431,6 +431,7 @@
     </div>
   </div>
 
+  <script type="module" src="/public/scripts/infrastructure/TripLogic.js"></script>
   <script type="module" src="/public/scripts/mainApp.js"></script>
 </body>
 </html>

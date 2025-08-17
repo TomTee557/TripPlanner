@@ -9,20 +9,25 @@ ini_set('session.use_strict_mode', 1); // Strict session ID handling
 
 require_once 'Routing.php';
 
-// Trasa do panelu logowania/rejestracji (auth.php)
+// Route to login/registration panel (auth.php)
 Router::get('auth', 'DefaultController', 'auth');
 
-// Trasa do głównej aplikacji (mainApp.php)
+// Route to main application (mainApp.php)
 Router::get('mainApp', 'DefaultController', 'mainApp');
 
-// Trasa POST do logowania - przy korzystaniu z formularza logowania
+// POST route for login - when using login form
 Router::post('login', 'SecurityController', 'login');
 
-// Trasa POST do rejestracji - przy korzystaniu z formularza rejestracji
+// POST route for registration - when using registration form
 Router::post('register', 'SecurityController', 'register');
 
-// Trasa POST do wylogowania
+// POST route for logout
 Router::post('logout', 'SecurityController', 'logout');
+
+// API endpoints - require session verification
+Router::get('api/trips', 'ApiController', 'getTrips');
+Router::post('api/trips', 'ApiController', 'addTrip');
+Router::post('api/trips/delete', 'ApiController', 'deleteTrip');
 
 // (opcjonalnie) domyślna trasa na / przekierowuje na auth
 Router::get('', 'DefaultController', 'auth');
