@@ -69,7 +69,7 @@ export class CurrencyConverter {
 
   // Convert currency
   async convert(fromCurrency, toCurrency, amount) {
-    // Ensure we have fresh exchange rates
+    // fresh exchange rates
     if (!this.lastUpdate || this.isDataStale()) {
       await this.getExchangeRates();
     }

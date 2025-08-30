@@ -23,7 +23,8 @@ class UserRepository {
             $userData['name'],
             $userData['surname'],
             $userData['email'],
-            $userData['password']
+            $userData['password'],
+            $userData['id']
         );
     }
     
@@ -53,7 +54,8 @@ class UserRepository {
                 $userData['name'],
                 $userData['surname'],
                 $userData['email'],
-                $userData['password']
+                $userData['password'],
+                $userData['id']
             );
         }
         

@@ -13,23 +13,45 @@ export class TripApiLogic {
         
         const response = await fetch(url, { ...defaultOptions, ...options });
         
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        const isJSON = contentType && contentType.includes('application/json');
+        
         // Check if user is logged in
         if (response.status === 401) {
-            const errorData = await response.json();
-            console.warn('Authentication error:', errorData.message);
-            
-            // Show popup asking for re-login
-            // PHP ROUTING manages views 
-            this.showLoginPopup(errorData.message);
-            throw new Error('Authentication required');
+            if (isJSON) {
+                const errorData = await response.json();
+                console.warn('Authentication error:', errorData.message);
+                this.showLoginPopup(errorData.message);
+                throw new Error('Authentication required');
+            } else {
+                console.warn('Authentication error: Non-JSON response');
+                this.showLoginPopup('Your session has expired. Please log in again.');
+                throw new Error('Authentication required');
+            }
         }
         
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+            if (isJSON) {
+                const errorData = await response.json();
+                console.error('API error:', errorData);
+                throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+            } else {
+                // Non-JSON response (probably HTML error page)
+                const errorText = await response.text();
+                console.error('Non-JSON error response:', errorText);
+                throw new Error(`Server error: ${response.status} - Check console for details`);
+            }
         }
         
-        return await response.json();
+        // Parse JSON response
+        if (isJSON) {
+            return await response.json();
+        } else {
+            const responseText = await response.text();
+            console.error('Expected JSON but got:', responseText);
+            throw new Error('Server returned non-JSON response');
+        }
     }
     
     // Popup asking for re-login

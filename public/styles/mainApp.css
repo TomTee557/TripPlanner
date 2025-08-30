@@ -336,6 +336,39 @@
   filter: brightness(0) saturate(100%) invert(27%) sepia(51%) saturate(2878%) hue-rotate(214deg) brightness(120%) contrast(110%);
 }
 
+/* Trip Delete Button */
+.main-app__trip-delete {
+  background: none;
+  border: none;
+  color: #f44336;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0.6rem;
+  border-radius: 50%;
+  transition: background 0.3s;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 0.5rem;
+}
+
+.main-app__trip-delete:hover {
+  background: rgba(244, 67, 54, 0.1);
+}
+
+.main-app__trip-delete-icon {
+  width: 20px;
+  height: 20px;
+  filter: brightness(0) saturate(100%) invert(20%) sepia(84%) saturate(6398%) hue-rotate(356deg) brightness(94%) contrast(91%);
+  transition: all 0.3s;
+}
+
+.main-app__trip-delete:hover .main-app__trip-delete-icon {
+  filter: brightness(0) saturate(100%) invert(20%) sepia(84%) saturate(6398%) hue-rotate(356deg) brightness(110%) contrast(100%);
+}
+
 /* Trip Details Button */
 .main-app__trip-details {
   background: none;

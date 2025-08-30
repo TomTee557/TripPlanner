@@ -1,70 +1,24 @@
 import { currencies, currencyConverter } from '/public/scripts/infrastructure/currencyConverterLogic.js';
 import { availablePictures, tripTypeLabels, PictureSelectionContext, BREAKPOINTS } from '/public/scripts/consts.js';
 import { inactivityTimer } from '/public/scripts/helpers/InactivityTimer.js';
+import { loadTripsFromAPI } from '/public/scripts/helpers/loadTripsFromAPI.js';
+import { GetTripsLogic } from '/public/scripts/infrastructure/GetTripsLogic.js';
+import { AddTripLogic } from '/public/scripts/infrastructure/AddTripLogic.js';
+import { UpdateTripLogic } from '/public/scripts/infrastructure/UpdateTripLogic.js';
+import { DeleteTripLogic } from '/public/scripts/infrastructure/DeleteTripLogic.js';
 
-// Mock data for trips
-const mockTrips = [
-  {
-    id: "trip_1",
-    title: "My Taiwan",
-    dateFrom: "2025-07-20",
-    dateTo: "2025-08-11",
-    country: "Taiwan",
-    tripType: ["exotic", "cultural"],
-    tags: ["Holidays", "Trip of the month"],
-    budget: "$3,000",
-    description: "Explore the beautiful island of Taiwan with its stunning mountains, vibrant culture, and delicious cuisine.",
-    image: "/public/assets/mountains.jpg"
-  },
-  {
-    id: "trip_2",
-    title: "Paris Adventure", 
-    dateFrom: "2025-09-15",
-    dateTo: "2025-09-22",
-    country: "France",
-    tripType: ["city-break", "cultural"],
-    tags: ["Weekend", "Romance"],
-    budget: "€1,500",
-    description: "A romantic getaway to the City of Light. Visit iconic landmarks, enjoy world-class cuisine, and stroll along the Seine.",
-    image: "/public/assets/mountains.jpg"
-  },
-  {
-    id: "trip_3",
-    title: "Alps Trekking",
-    dateFrom: "2025-06-10",
-    dateTo: "2025-06-17",
-    country: "Switzerland", 
-    tripType: ["mountain", "trekking"],
-    tags: ["Adventure", "Sports"],
-    budget: "CHF 2,200",
-    description: "Challenge yourself with breathtaking mountain trails in the Swiss Alps. Experience pristine nature and stunning vistas.",
-    image: "/public/assets/mountains.jpg"
-  },
-  {
-    id: "trip_4",
-    title: "Family Beach Vacation",
-    dateFrom: "2025-08-01",
-    dateTo: "2025-08-14",
-    country: "Spain",
-    tripType: ["family", "last-minute"],
-    tags: ["Beach", "Relaxation"],
-    budget: "€2,800",
-    description: "Perfect family vacation on the Spanish coast. Sun, sand, and relaxation for the whole family.",
-    image: "/public/assets/mountains-3.jpg"
-  }
-];
+// Data for trips - will be loaded from API
+let fetchedTrips = [];
 
 let selectedPicture = null;
 let pictureSelectionContext = PictureSelectionContext.ADD;
-// TODO: use a better counter
-let nextTripIdCounter = 5; // Start from 5 since we have 4 mock trips
-let filteredTrips = [...mockTrips];
+let filteredTrips = [];
 
 // DOM elements - will be initialized after DOM is loaded
 let searchPanel, showSearchBtn, closeSearchBtn, searchForm, clearFiltersBtn, tripsList, addTripBtn;
 
 // Initialize the app
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
   // Initialize DOM elements
   searchPanel = document.getElementById('searchPanel');
   showSearchBtn = document.getElementById('showSearchBtn');
@@ -76,7 +30,15 @@ document.addEventListener('DOMContentLoaded', function() {
   
   
   initializeClock();
-  renderTrips(filteredTrips);
+  
+  // Load trips from API and render them
+  const loadResult = await loadTripsFromAPI(null, showPopup);
+  if (loadResult.success) {
+    fetchedTrips = loadResult.trips;
+    filteredTrips = [...fetchedTrips];
+    renderTrips(); // Render after loading
+  }
+  
   setupEventListeners();
   
   // Show search panel on desktop by default, hide on mobile
@@ -252,6 +214,16 @@ function handleTripActions(e) {
     }
     return;
   }
+  
+  // Check if clicked element is a trip delete button
+  if (e.target.closest('.main-app__trip-delete')) {
+    const button = e.target.closest('.main-app__trip-delete');
+    const tripId = button.getAttribute('data-trip-id');
+    if (tripId) {
+      deleteTrip(tripId);
+    }
+    return;
+  }
 }
 
 function handleSearch(e) {
@@ -273,7 +245,7 @@ function handleSearch(e) {
     tags: formData.get('tags')?.toLowerCase()
   };
   
-  filteredTrips = mockTrips.filter(trip => {
+  filteredTrips = fetchedTrips.filter(trip => {
     // Date from filter
     if (filters.dateFrom && trip.dateFrom < filters.dateFrom) {
       return false;
@@ -313,7 +285,7 @@ function handleSearch(e) {
     return true;
   });
   
-  renderTrips(filteredTrips);
+  renderTrips();
   
   // Hide search panel on mobile after search
   if (window.innerWidth <= BREAKPOINTS.MOBILE) {
@@ -334,7 +306,7 @@ function clearFilters() {
   updateTripTypeDisplay();
 }
 
-function renderTrips(trips) {
+function renderTrips(trips = filteredTrips) {
   if (!tripsList) return;
   
   if (trips.length === 0) {
@@ -365,6 +337,9 @@ function renderTrips(trips) {
         </button>
         <button class="main-app__trip-edit" data-trip-id="${trip.id}" title="Edit trip">
           <img src="/public/assets/edit.png" alt="Edit" class="main-app__trip-edit-icon" />
+        </button>
+        <button class="main-app__trip-delete" data-trip-id="${trip.id}" title="Delete trip">
+          <img src="/public/assets/delete.png" alt="Delete" class="main-app__trip-delete-icon" />
         </button>
       </div>
     </div>
@@ -518,7 +493,7 @@ function updatePicturePreview() {
   }
 }
 
-function handleAddTripSubmit() {
+async function handleAddTripSubmit() {
   const form = document.getElementById('addTripForm');
   const submitBtn = document.getElementById('addTripSubmitBtn');
   
@@ -561,9 +536,8 @@ function handleAddTripSubmit() {
     return;
   }
   
-  // Create new trip object
+  // Create new trip object (without ID - will be generated by database)
   const newTrip = {
-    id: `trip_${nextTripIdCounter++}`,
     title: title,
     dateFrom: dateFrom,
     dateTo: dateTo,
@@ -575,23 +549,36 @@ function handleAddTripSubmit() {
     description: description || ''
   };
   
-  // Add to mockTrips array
-  mockTrips.push(newTrip);
-  
-  // Update filtered trips and re-render
-  filteredTrips = [...mockTrips];
-  renderTrips(filteredTrips);
-  
-  // Hide popup and show success message
-  hideAddTripPopup();
-  showPopup(`Trip "${title}" has been added successfully!`, "Success");
+  try {
+    // Add trip via API
+    const result = await AddTripLogic.addTrip(newTrip);
+    
+    if (result.success) {
+      // Add the new trip with ID from database to local array
+      const addedTrip = { ...newTrip, id: result.tripId };
+      fetchedTrips.push(addedTrip);
+      
+      // Update filtered trips and re-render
+      filteredTrips = [...fetchedTrips];
+      renderTrips();
+      
+      // Hide popup and show success message
+      hideAddTripPopup();
+      showPopup(`Trip "${title}" has been added successfully!`, "Success");
+    } else {
+      throw new Error(result.message || 'Failed to add trip');
+    }
+  } catch (error) {
+    console.error('Failed to add trip:', error.message);
+    showPopup(`Failed to add trip: ${error.message}`, "Error");
+  }
   
   // Re-enable button
   reEnableButton();
 }
 
 function editTrip(tripId) {
-  const trip = mockTrips.find(t => t.id === tripId);
+  const trip = fetchedTrips.find(t => t.id === tripId);
   if (!trip) {
     showPopup("Trip not found", "Error");
     return;
@@ -630,7 +617,7 @@ function showPopup(message, title = "Information") {
 
 function showTripDetails(tripId) {
   console.log('📋 showTripDetails called with tripId:', tripId);
-  const trip = mockTrips.find(t => t.id === tripId);
+  const trip = fetchedTrips.find(t => t.id === tripId);
   if (!trip) {
     showPopup("Trip not found", "Error");
     return;
@@ -786,7 +773,7 @@ function updateEditPicturePreview() {
   }
 }
 
-function handleEditTripSave() {
+async function handleEditTripSave() {
   // Disable button to prevent double submission
   const saveBtn = document.getElementById('editTripSaveBtn');
   saveBtn.disabled = true;
@@ -821,7 +808,7 @@ function handleEditTripSave() {
   }
   
   // Find and update the trip
-  const tripIndex = mockTrips.findIndex(t => t.id === currentEditTripId);
+  const tripIndex = fetchedTrips.findIndex(t => t.id === currentEditTripId);
   if (tripIndex === -1) {
     showPopup("Trip not found.", "Error");
     reEnableButton();
@@ -830,7 +817,6 @@ function handleEditTripSave() {
   
   // Update trip object
   const updatedTrip = {
-    id: currentEditTripId,
     title: title,
     dateFrom: dateFrom,
     dateTo: dateTo,
@@ -842,15 +828,28 @@ function handleEditTripSave() {
     image: selectedPicture ? availablePictures[selectedPicture].path : '/public/assets/mountains.jpg'
   };
   
-  mockTrips[tripIndex] = updatedTrip;
-  
-  // Update filtered trips and re-render
-  filteredTrips = [...mockTrips];
-  renderTrips(filteredTrips);
-  
-  // Hide popup and show success message
-  hideEditTripPopup();
-  showPopup(`Trip "${title}" has been updated successfully!`, "Success");
+  try {
+    // Update trip via API
+    const result = await UpdateTripLogic.updateTrip(currentEditTripId, updatedTrip);
+    
+    if (result.success) {
+      // Update local array
+      fetchedTrips[tripIndex] = { ...updatedTrip, id: currentEditTripId };
+      
+      // Update filtered trips and re-render
+      filteredTrips = [...fetchedTrips];
+      renderTrips();
+      
+      // Hide popup and show success message
+      hideEditTripPopup();
+      showPopup(`Trip "${title}" has been updated successfully!`, "Success");
+    } else {
+      throw new Error(result.message || 'Failed to update trip');
+    }
+  } catch (error) {
+    console.error('Failed to update trip:', error.message);
+    showPopup(`Failed to update trip: ${error.message}`, "Error");
+  }
   
   // Re-enable button
   reEnableButton();
@@ -1115,5 +1114,44 @@ function closeCurrencyConverterPopup() {
     document.querySelectorAll('.currency-converter__dropdown').forEach(dropdown => {
       dropdown.classList.remove('currency-converter__dropdown--open');
     });
+  }
+}
+
+// Delete trip function with API integration
+async function deleteTrip(tripId) {
+  const trip = fetchedTrips.find(t => t.id === tripId);
+  if (!trip) {
+    showPopup("Trip not found", "Error");
+    return;
+  }
+  
+  // Show confirmation dialog
+  const confirmed = confirm(`Are you sure you want to delete the trip "${trip.title}"? This action cannot be undone.`);
+  if (!confirmed) {
+    return;
+  }
+  
+  try {
+    // Delete trip via API
+    const result = await DeleteTripLogic.deleteTrip(tripId);
+    
+    if (result.success) {
+      // Remove trip from local array
+      const tripIndex = fetchedTrips.findIndex(t => t.id === tripId);
+      if (tripIndex !== -1) {
+        fetchedTrips.splice(tripIndex, 1);
+      }
+      
+      // Update filtered trips and re-render
+      filteredTrips = [...fetchedTrips];
+      renderTrips();
+      
+      showPopup(`Trip "${trip.title}" has been deleted successfully!`, "Success");
+    } else {
+      throw new Error(result.message || 'Failed to delete trip');
+    }
+  } catch (error) {
+    console.error('Failed to delete trip:', error.message);
+    showPopup(`Failed to delete trip: ${error.message}`, "Error");
   }
 }

@@ -5,8 +5,8 @@ class Database {
     private $connection;
     
     // Database configuration
-    private $host = 'db';  // nazwa serwisu w docker-compose.yaml
-    private $port = '5432'; // port wewnętrzny kontenera
+    private $host = 'db';  // service name in docker-compose.yaml
+    private $port = '5432'; // internal container port
     private $database = 'db';
     private $username = 'docker';
     private $password = 'docker';
@@ -33,7 +33,7 @@ class Database {
         return $this->connection;
     }
     
-    // Metoda do wykonania zapytań SELECT
+    // Method for executing SELECT queries
     public function query($sql, $params = []) {
         try {
             $stmt = $this->connection->prepare($sql);
@@ -44,7 +44,7 @@ class Database {
         }
     }
     
-    // Metoda do wykonania zapytań INSERT, UPDATE, DELETE
+    // Method for executing INSERT, UPDATE, DELETE queries
     public function execute($sql, $params = []) {
         try {
             $stmt = $this->connection->prepare($sql);
@@ -54,7 +54,7 @@ class Database {
         }
     }
     
-    // Metoda do pobrania ostatnio wstawionego ID
+    // Method to get the last inserted ID
     public function lastInsertId() {
         return $this->connection->lastInsertId();
     }

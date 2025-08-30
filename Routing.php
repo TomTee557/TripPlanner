@@ -2,6 +2,7 @@
 
 require_once 'src/controllers/DefaultController.php';
 require_once 'src/controllers/SecurityController.php';
+require_once 'src/controllers/ApiController.php';
 
 class Router {
 
@@ -17,10 +18,24 @@ class Router {
 
     public static function run($url) {
         $method = $_SERVER['REQUEST_METHOD'];
-        $action = explode("/", $url)[0] ?: 'auth';
+        $action = $url ?: 'auth';
+        
+        // Sprawdź czy to endpoint API
+        $isApiEndpoint = strpos($action, 'api/') === 0;
         
         if (!isset(self::$routes[$method][$action])) {
-            die("404 Not Found");
+            // Dla endpointów API zwróć JSON 404
+            if ($isApiEndpoint) {
+                http_response_code(404);
+                header('Content-Type: application/json');
+                echo json_encode([
+                    'error' => 'Endpoint not found',
+                    'message' => "API endpoint '$action' not found"
+                ]);
+                exit;
+            } else {
+                die("404 Not Found");
+            }
         }
 
         list($controllerName, $methodName) = self::$routes[$method][$action];

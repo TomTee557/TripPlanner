@@ -15,8 +15,8 @@ class ApiController extends AppController {
     }
 
     /**
-     * Sprawdza czy użytkownik jest zalogowany
-     * Zwraca dane dla JavaScript do obsługi
+     * Checks if user is logged in
+     * Returns data for JavaScript handling
      */
     private function checkAuth() {
         if (session_status() === PHP_SESSION_NONE) {
@@ -30,16 +30,16 @@ class ApiController extends AppController {
             echo json_encode([
                 'error' => 'Not authenticated',
                 'message' => 'Your session has expired. Please log in again.',
-                'action' => 'show_login_popup' // Sygnał dla JavaScript
+                'action' => 'show_login_popup' // Signal for JavaScript
             ]);
             exit;
         }
         
-        // Sprawdź timeout sesji
+        // Check session timeout
         $sessionTimeout = 30 * 60; // 30 minutes
         if (isset($_SESSION['last_activity'])) {
             if (time() - $_SESSION['last_activity'] > $sessionTimeout) {
-                // Session expired - wyczyść sesję
+                // Session expired - clear session
                 unset($_SESSION['user_logged_in']);
                 unset($_SESSION['user_email']);
                 unset($_SESSION['user_name']);
@@ -50,7 +50,7 @@ class ApiController extends AppController {
                 echo json_encode([
                     'error' => 'Session expired',
                     'message' => 'Your session has expired due to inactivity. Please log in again.',
-                    'action' => 'show_login_popup' // Sygnał dla JavaScript
+                    'action' => 'show_login_popup' // Signal for JavaScript
                 ]);
                 exit;
             }
@@ -63,10 +63,10 @@ class ApiController extends AppController {
     }
 
     /**
-     * GET /api/trips - pobierz trips użytkownika
+     * GET /api/trips - get user's trips
      */
     public function getTrips() {
-        $userEmail = $this->checkAuth(); // Zwraca email lub kończy z 401
+        $userEmail = $this->checkAuth(); // Returns email or exits with 401
         
         try {
             $trips = $this->tripRepository->findByUserEmail($userEmail);
@@ -91,10 +91,10 @@ class ApiController extends AppController {
     }
 
     /**
-     * POST /api/trips - dodaj nowy trip
+     * POST /api/trips - add new trip
      */
     public function addTrip() {
-        $userEmail = $this->checkAuth(); // Zwraca email lub kończy z 401
+        $userEmail = $this->checkAuth(); // Returns email or exits with 401
         
         if (!$this->isPost()) {
             http_response_code(405);
@@ -104,16 +104,46 @@ class ApiController extends AppController {
         }
         
         try {
-            // Pobierz dane z POST
-            $input = json_decode(file_get_contents('php://input'), true);
+            // Get data from POST
+            $jsonData = file_get_contents('php://input');
+            $input = json_decode($jsonData, true);
             
-            // Znajdź user_id
-            $user = $this->userRepository->findByEmail($userEmail);
-            if (!$user) {
-                throw new Exception("User not found");
+            // Check if JSON is valid
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                http_response_code(400);
+                header('Content-Type: application/json');
+                echo json_encode([
+                    'error' => 'Invalid JSON',
+                    'message' => 'Request body must be valid JSON'
+                ]);
+                exit;
             }
             
-            // Dodaj trip do bazy
+            // Podstawowa walidacja danych
+            if (!$input || !isset($input['title']) || !isset($input['country']) || 
+                !isset($input['dateFrom']) || !isset($input['dateTo'])) {
+                http_response_code(400);
+                header('Content-Type: application/json');
+                echo json_encode([
+                    'error' => 'Missing required fields',
+                    'message' => 'Title, country, dateFrom and dateTo are required'
+                ]);
+                exit;
+            }
+            
+            // Find user_id
+            $user = $this->userRepository->findByEmail($userEmail);
+            if (!$user) {
+                http_response_code(500);
+                header('Content-Type: application/json');
+                echo json_encode([
+                    'error' => 'User not found',
+                    'message' => 'User associated with session not found'
+                ]);
+                exit;
+            }
+            
+            // Add trip to database
             $tripId = $this->tripRepository->save($user->id, $input);
             
             header('Content-Type: application/json');
@@ -136,10 +166,10 @@ class ApiController extends AppController {
     }
 
     /**
-     * POST /api/trips/delete - usuń trip
+     * POST /api/trips/delete - delete trip
      */
     public function deleteTrip() {
-        $userEmail = $this->checkAuth(); // Zwraca email lub kończy z 401
+        $userEmail = $this->checkAuth(); // Returns email or exits with 401
         
         if (!$this->isPost()) {
             http_response_code(405);
@@ -156,13 +186,13 @@ class ApiController extends AppController {
                 throw new Exception("Trip ID is required");
             }
             
-            // Znajdź user_id
+            // Find user_id
             $user = $this->userRepository->findByEmail($userEmail);
             if (!$user) {
                 throw new Exception("User not found");
             }
             
-            // Usuń trip (tylko jeśli należy do użytkownika)
+            // Delete trip (only if it belongs to the user)
             $deleted = $this->tripRepository->deleteById($tripId, $user->id);
             
             header('Content-Type: application/json');
@@ -179,6 +209,82 @@ class ApiController extends AppController {
             echo json_encode([
                 'error' => 'Database error',
                 'message' => 'Unable to delete trip. Please try again later.'
+            ]);
+        }
+    }
+    
+    /**
+     * Update existing trip
+     * POST /api/trips/update
+     */
+    public function updateTrip() {
+        $userEmail = $this->checkAuth(); // Returns email or exits with 401
+        
+        if (!$this->isPost()) {
+            http_response_code(405);
+            header('Content-Type: application/json');
+            echo json_encode(['error' => 'Method not allowed']);
+            exit;
+        }
+        
+        try {
+            $input = json_decode(file_get_contents('php://input'), true);
+            
+            $tripId = $input['id'] ?? null;
+            $title = trim($input['title'] ?? '');
+            $dateFrom = $input['dateFrom'] ?? null;
+            $dateTo = $input['dateTo'] ?? null;
+            $country = trim($input['country'] ?? '');
+            $tripType = $input['tripType'] ?? [];
+            $tags = $input['tags'] ?? [];
+            $budget = trim($input['budget'] ?? '');
+            $description = trim($input['description'] ?? '');
+            $image = $input['image'] ?? '/public/assets/mountains.jpg';
+            
+            // Validation
+            if (!$tripId || !$title || !$dateFrom || !$dateTo || !$country) {
+                throw new Exception("Required fields: id, title, dateFrom, dateTo, country");
+            }
+            
+            // Find user
+            $user = $this->userRepository->findByEmail($userEmail);
+            if (!$user) {
+                throw new Exception("User not found");
+            }
+            
+            // Check if trip exists and belongs to user
+            $existingTrip = $this->tripRepository->findById($tripId, $user->id);
+            if (!$existingTrip) {
+                throw new Exception("Trip not found or access denied");
+            }
+            
+            // Update trip in database
+            $updated = $this->tripRepository->updateById($tripId, $user->id, [
+                'title' => $title,
+                'dateFrom' => $dateFrom,
+                'dateTo' => $dateTo,
+                'country' => $country,
+                'tripType' => $tripType,
+                'tags' => $tags,
+                'budget' => $budget ?: null,
+                'description' => $description,
+                'image' => $image
+            ]);
+            
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => true,
+                'message' => 'Trip updated successfully',
+                'tripId' => $tripId
+            ]);
+            
+        } catch (Exception $e) {
+            error_log("Error updating trip: " . $e->getMessage());
+            http_response_code(500);
+            header('Content-Type: application/json');
+            echo json_encode([
+                'error' => 'Database error',
+                'message' => 'Unable to update trip. Please try again later.'
             ]);
         }
     }

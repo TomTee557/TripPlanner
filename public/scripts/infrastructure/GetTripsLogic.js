@@ -26,10 +26,7 @@ export class GetTripsLogic {
         } catch (error) {
             console.error('GetTripsLogic: Failed to load trips:', error.message);
             
-            // Don't show popup here - UI layer should handle this
-            // If authentication error, TripApiLogic already handled popup
-            
-            throw error; // Pass error to UI layer
+            throw error;
         }
     }
     

@@ -122,4 +122,29 @@ class TripRepository {
         
         return $trip;
     }
+    
+    public function updateById($tripId, $userId, $tripData) {
+        $sql = "UPDATE trips 
+                SET title = ?, date_from = ?, date_to = ?, country = ?, 
+                    trip_type = ?::jsonb, tags = ?::jsonb, budget = ?, 
+                    description = ?, image = ?
+                WHERE id = ?::uuid AND user_id = ?";
+        
+        $tripType = json_encode($tripData['tripType'] ?: []);
+        $tags = json_encode($tripData['tags'] ?: []);
+        
+        return $this->database->execute($sql, [
+            $tripData['title'],
+            $tripData['dateFrom'],
+            $tripData['dateTo'],
+            $tripData['country'],
+            $tripType,
+            $tags,
+            $tripData['budget'] ?: null,
+            $tripData['description'] ?: null,
+            $tripData['image'] ?: '/public/assets/mountains.jpg',
+            $tripId,
+            $userId
+        ]);
+    }
 }
