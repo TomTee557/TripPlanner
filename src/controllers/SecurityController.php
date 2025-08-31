@@ -80,8 +80,25 @@ class SecurityController extends AppController {
         $hashedPassword = PasswordHelper::hash($password);
 
         try {
+            // Start transaction for user registration
+            $this->userRepository->getDatabase()->beginTransaction();
+            
+            // 1. Create user
             $newUser = new User($name, $surname, $email, $hashedPassword);
-            $this->userRepository->save($newUser);
+            $userId = $this->userRepository->saveWithReturn($newUser);
+            
+            // 2. Log registration activity
+            $this->logUserActivity($userId, 'REGISTRATION', $email);
+            
+            // In future, extend functionality:
+            // 3. Create default user preferences (if we had this table)
+            // $this->createDefaultUserPreferences($userId);
+            
+            // 4. Send welcome email (if we had email service)
+            // $this->emailService->sendWelcomeEmail($email, $name);
+            
+            // Commit transaction
+            $this->userRepository->getDatabase()->commit();
             
             // After registration message on login panel
             $_SESSION['messages'] = ['Registration successful! Now please log in.'];
@@ -90,6 +107,9 @@ class SecurityController extends AppController {
             exit;
             
         } catch (Exception $e) {
+            // Rollback transaction on any error
+            $this->userRepository->getDatabase()->rollback();
+            
             if (strpos($e->getMessage(), 'already exists') !== false) {
                 $_SESSION['messages'] = ['User with the specified email address already exists'];
             } else {
@@ -132,5 +152,26 @@ class SecurityController extends AppController {
         
         header('Location: /auth');
         exit;
+    }
+    
+    /**
+     * Log user activity for audit purposes
+     */
+    private function logUserActivity($userId, $action, $details = '') {
+        try {
+            // Simple logging to error_log for now
+            // In production, this could write to a separate audit table
+            $timestamp = date('Y-m-d H:i:s');
+            $logMessage = "User Activity: UserID={$userId}, Action={$action}, Details={$details}, Time={$timestamp}";
+            error_log($logMessage);
+            
+            // Future implementation could insert into audit_log table:
+            // $sql = "INSERT INTO audit_log (user_id, action, details, created_at) VALUES (?, ?, ?, NOW())";
+            // $this->database->execute($sql, [$userId, $action, $details]);
+            
+        } catch (Exception $e) {
+            // Don't let logging errors break the main operation
+            error_log("Failed to log user activity: " . $e->getMessage());
+        }
     }
 }

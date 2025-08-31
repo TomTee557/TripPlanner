@@ -509,6 +509,27 @@
     </div>
   </div>
 
+  <!-- Confirm Delete User Popup -->
+  <div class="popup-overlay" id="confirmDeleteUserPopupOverlay" style="display: none;">
+    <div class="popup popup--confirm popup--danger">
+      <div class="popup__header">
+        <h3 class="popup__title">Delete User</h3>
+        <button class="popup__close" id="confirmDeleteUserPopupClose">&times;</button>
+      </div>
+      <div class="popup__content">
+        <div class="popup__warning">
+          <p><strong>Warning: This action cannot be undone!</strong></p>
+          <p id="confirmDeleteUserMessage">Are you sure you want to delete this user?</p>
+          <p class="popup__consequence">All user's trips will also be permanently deleted.</p>
+        </div>
+      </div>
+      <div class="popup__actions">
+        <button type="button" class="popup__button popup__button--secondary" id="confirmDeleteUserCancel">Cancel</button>
+        <button type="button" class="popup__button popup__button--danger" id="confirmDeleteUserConfirm">Delete User</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // Pass user role from PHP to JavaScript
     window.currentUserRole = '<?php echo $_SESSION['user_role'] ?? 'USER'; ?>';

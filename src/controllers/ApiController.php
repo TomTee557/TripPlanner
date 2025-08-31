@@ -455,4 +455,68 @@ class ApiController extends AppController {
             ]);
         }
     }
+    
+    /**
+     * POST /api/users/delete - delete user (admin only)
+     */
+    public function deleteUser() {
+        $this->checkAdminAuth(); // Admin only
+        
+        try {
+            $input = json_decode(file_get_contents('php://input'), true);
+            
+            if (!isset($input['userId']) || empty($input['userId'])) {
+                http_response_code(400);
+                header('Content-Type: application/json');
+                echo json_encode([
+                    'error' => 'Invalid input',
+                    'message' => 'User ID is required'
+                ]);
+                exit;
+            }
+            
+            $userId = $input['userId'];
+            
+            // Check if user exists
+            $userToDelete = $this->userRepository->findById($userId);
+            if (!$userToDelete) {
+                http_response_code(404);
+                header('Content-Type: application/json');
+                echo json_encode([
+                    'error' => 'User not found',
+                    'message' => 'User with specified ID does not exist'
+                ]);
+                exit;
+            }
+            
+            // Prevent admin from deleting themselves
+            if (isset($_SESSION['user_email']) && $_SESSION['user_email'] === $userToDelete->email) {
+                http_response_code(400);
+                header('Content-Type: application/json');
+                echo json_encode([
+                    'error' => 'Cannot delete yourself',
+                    'message' => 'You cannot delete your own account'
+                ]);
+                exit;
+            }
+            
+            // Delete user (CASCADE will delete related trips automatically)
+            $this->userRepository->deleteById($userId);
+            
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => true,
+                'message' => 'User deleted successfully'
+            ]);
+            
+        } catch (Exception $e) {
+            error_log("Error deleting user: " . $e->getMessage());
+            http_response_code(500);
+            header('Content-Type: application/json');
+            echo json_encode([
+                'error' => 'Database error',
+                'message' => 'Unable to delete user. Please try again later.'
+            ]);
+        }
+    }
 }

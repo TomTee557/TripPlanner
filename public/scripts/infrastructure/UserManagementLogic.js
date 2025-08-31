@@ -76,4 +76,28 @@ export class UserManagementLogic {
             throw error;
         }
     }
+    
+    /**
+     * Delete user (admin only)
+     * @param {number} userId - User ID
+     * @returns {Promise<Object>} Server response
+     */
+    static async deleteUser(userId) {
+        try {
+            console.log('UserManagementLogic: Deleting user...', { userId });
+            
+            const result = await TripApiLogic.request('/api/users/delete', {
+                method: 'POST',
+                body: JSON.stringify({ userId })
+            });
+            
+            console.log('UserManagementLogic: User deleted successfully');
+            
+            return result;
+            
+        } catch (error) {
+            console.error('UserManagementLogic: Failed to delete user:', error.message);
+            throw error;
+        }
+    }
 }

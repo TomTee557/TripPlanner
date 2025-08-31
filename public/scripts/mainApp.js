@@ -20,6 +20,7 @@ let currentUsers = [];
 let currentUserRole = null;
 let userToChangePassword = null;
 let pendingRoleChange = null; // For storing role change data
+let userToDelete = null; // For storing user delete data
 
 // DOM elements - will be initialized after DOM is loaded
 let searchPanel, showSearchBtn, closeSearchBtn, searchForm, clearFiltersBtn, tripsList, addTripBtn, manageUsersBtn;
@@ -1279,6 +1280,9 @@ function renderUsersList() {
         <button class="popup__button popup__button--secondary btn-change-password" data-user-id="${user.id}" data-user-email="${user.email}">
           Change Password
         </button>
+        <button class="popup__button popup__button--danger btn-delete-user" data-user-id="${user.id}" data-user-email="${user.email}" data-user-name="${user.name} ${user.surname}">
+          Delete User
+        </button>
       </div>
     </div>
   `).join('');
@@ -1303,6 +1307,11 @@ function setupUserActionListeners() {
   // Change password buttons
   document.querySelectorAll('.btn-change-password').forEach(btn => {
     btn.addEventListener('click', handleChangeUserPassword);
+  });
+  
+  // Delete user buttons
+  document.querySelectorAll('.btn-delete-user').forEach(btn => {
+    btn.addEventListener('click', handleDeleteUser);
   });
   
   // Close popup when clicking outside
@@ -1532,5 +1541,104 @@ async function handleChangePasswordSubmit(event) {
   } catch (error) {
     console.error('Failed to update password:', error.message);
     showPopup(`Failed to update password: ${error.message}`, 'Error');
+  }
+}
+
+// Handle delete user button click
+function handleDeleteUser(event) {
+  const userId = event.target.dataset.userId;
+  const userEmail = event.target.dataset.userEmail;
+  const userName = event.target.dataset.userName;
+  
+  // Store user data for deletion
+  userToDelete = {
+    id: userId,
+    email: userEmail,
+    name: userName
+  };
+  
+  // Show confirmation popup
+  showConfirmDeleteUserPopup(userEmail, userName);
+}
+
+// Show confirm delete user popup
+function showConfirmDeleteUserPopup(userEmail, userName) {
+  const popup = document.getElementById('confirmDeleteUserPopupOverlay');
+  const message = document.getElementById('confirmDeleteUserMessage');
+  
+  if (popup && message) {
+    message.textContent = `Are you sure you want to delete ${userName} (${userEmail})?`;
+    popup.style.display = 'flex';
+    popup.classList.add('fade-in');
+  }
+  
+  // Setup event listeners for this popup
+  setupDeleteUserPopupListeners();
+}
+
+// Hide confirm delete user popup
+function hideConfirmDeleteUserPopup() {
+  const popup = document.getElementById('confirmDeleteUserPopupOverlay');
+  if (popup) {
+    popup.classList.remove('fade-in');
+    popup.style.display = 'none';
+  }
+  
+  // Clear user data
+  userToDelete = null;
+}
+
+// Setup event listeners for delete user popup
+function setupDeleteUserPopupListeners() {
+  const closeBtn = document.querySelector('#confirmDeleteUserPopupOverlay .popup__close');
+  const cancelBtn = document.getElementById('confirmDeleteUserCancel');
+  const confirmBtn = document.getElementById('confirmDeleteUserConfirm');
+  
+  // Remove existing listeners to prevent duplicates
+  closeBtn?.removeEventListener('click', hideConfirmDeleteUserPopup);
+  cancelBtn?.removeEventListener('click', hideConfirmDeleteUserPopup);
+  confirmBtn?.removeEventListener('click', executeDeleteUser);
+  
+  // Add fresh listeners
+  closeBtn?.addEventListener('click', hideConfirmDeleteUserPopup);
+  cancelBtn?.addEventListener('click', hideConfirmDeleteUserPopup);
+  confirmBtn?.addEventListener('click', executeDeleteUser);
+  
+  // Close popup when clicking outside
+  const popup = document.getElementById('confirmDeleteUserPopupOverlay');
+  popup?.addEventListener('click', (e) => {
+    if (e.target === popup) {
+      hideConfirmDeleteUserPopup();
+    }
+  });
+}
+
+// Execute user deletion
+async function executeDeleteUser() {
+  if (!userToDelete) {
+    showPopup('No user selected for deletion', 'Error');
+    return;
+  }
+  
+  try {
+    // Store user info before hiding popup
+    const userId = userToDelete.id;
+    const userEmail = userToDelete.email;
+    const userName = userToDelete.name;
+    
+    const result = await UserManagementLogic.deleteUser(userId);
+    
+    if (result.success) {
+      hideConfirmDeleteUserPopup();
+      showPopup(`User ${userName} (${userEmail}) has been deleted successfully!`, 'Success');
+      
+      // Refresh users list
+      await handleManageUsers();
+    } else {
+      throw new Error(result.message || 'Failed to delete user');
+    }
+  } catch (error) {
+    console.error('Failed to delete user:', error.message);
+    showPopup(`Failed to delete user: ${error.message}`, 'Error');
   }
 }

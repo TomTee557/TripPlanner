@@ -10,6 +10,10 @@ class UserRepository {
         $this->database = Database::getInstance();
     }
     
+    public function getDatabase() {
+        return $this->database;
+    }
+    
     public function findByEmail($email) {
         $sql = "SELECT * FROM users WHERE LOWER(email) = LOWER(?)";
         $result = $this->database->query($sql, [$email]);
@@ -44,6 +48,25 @@ class UserRepository {
             $user->password,
             $user->role ?: 'USER'
         ]);
+    }
+    
+    public function saveWithReturn(User $user) {
+        // Check if user already exists
+        $existingUser = $this->findByEmail($user->email);
+        if ($existingUser) {
+            throw new Exception("User with this email already exists");
+        }
+        
+        $sql = "INSERT INTO users (name, surname, email, password, role) VALUES (?, ?, ?, ?, ?) RETURNING id";
+        $result = $this->database->query($sql, [
+            $user->name,
+            $user->surname, 
+            $user->email,
+            $user->password,
+            $user->role ?: 'USER'
+        ]);
+        
+        return $result[0]['id'];
     }
     
     public function findAll() {
@@ -97,5 +120,10 @@ class UserRepository {
             $userData['id'],
             $userData['role']
         );
+    }
+    
+    public function deleteById($userId) {
+        $sql = "DELETE FROM users WHERE id = ?";
+        return $this->database->execute($sql, [$userId]);
     }
 }

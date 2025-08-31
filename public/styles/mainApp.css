@@ -827,6 +827,42 @@
   color: white;
 }
 
+.popup__button--danger:hover {
+  background: #c82333;
+}
+
+/* Danger popup styles */
+.popup--danger .popup__header {
+  background: #f8d7da;
+  border-bottom-color: #f5c6cb;
+}
+
+.popup--danger .popup__title {
+  color: #721c24;
+}
+
+.popup__warning {
+  padding: 1rem;
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.popup__warning p {
+  margin: 0.5rem 0;
+  color: #856404;
+}
+
+.popup__warning strong {
+  color: #721c24;
+}
+
+.popup__consequence {
+  font-style: italic;
+  color: #6c757d !important;
+}
+
 .popup__button-currency-converter {
   margin-right: 24px
 }
@@ -1278,7 +1314,6 @@
 
 .user-management {
   max-height: 60vh;
-  overflow-y: auto;
 }
 
 .user-management__loading {

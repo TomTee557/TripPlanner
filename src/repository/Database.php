@@ -58,4 +58,17 @@ class Database {
     public function lastInsertId() {
         return $this->connection->lastInsertId();
     }
+    
+    // Transaction methods
+    public function beginTransaction() {
+        return $this->connection->beginTransaction();
+    }
+    
+    public function commit() {
+        return $this->connection->commit();
+    }
+    
+    public function rollback() {
+        return $this->connection->rollback();
+    }
 }
