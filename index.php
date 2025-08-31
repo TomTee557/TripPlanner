@@ -33,6 +33,11 @@ Router::post('api/trips', 'ApiController', 'addTrip');
 Router::post('api/trips/update', 'ApiController', 'updateTrip');
 Router::post('api/trips/delete', 'ApiController', 'deleteTrip');
 
+// Admin API endpoints - require admin role
+Router::get('api/users', 'ApiController', 'getUsers');
+Router::post('api/users/role', 'ApiController', 'updateUserRole');
+Router::post('api/users/password', 'ApiController', 'updateUserPassword');
+
 // (opcjonalnie) domyślna trasa na / przekierowuje na auth
 Router::get('', 'DefaultController', 'auth');
 

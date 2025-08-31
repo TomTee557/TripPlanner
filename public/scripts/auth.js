@@ -43,8 +43,8 @@ function isValidEmail(email) {
 
 // Password strength validation
 function isValidPassword(password) {
-  // At least 4 characters
-  return password.length >= 4;
+  // At least 6 characters
+  return password.length >= 6;
 }
 
 // LOGIN VALIDATION
@@ -126,7 +126,7 @@ registerForm?.addEventListener('submit', e => {
   if (password.value && !isValidPassword(password.value)) {
     password.classList.add('auth__input--error');
     valid = false;
-    errorMessage = 'Password must be at least 4 characters long';
+    errorMessage = 'Password must be at least 6 characters long';
   }
 
   // Validate password confirmation

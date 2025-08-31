@@ -15,6 +15,11 @@ class DefaultController extends AppController {
 
     public function mainApp()
     {
+        // Start session to access user data
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        
         $this->render('mainApp');
     }
 }

@@ -30,11 +30,18 @@ class SecurityController extends AppController {
             $user = $this->userRepository->findByEmail($email);
             
             if ($user && PasswordHelper::verify($password, $user->password)) {
+                // Debug logging
+                error_log("Login successful for user: " . $user->email . ", role: " . $user->role);
+                
                 // Set user session
                 $_SESSION['user_logged_in'] = true;
                 $_SESSION['user_email'] = $user->email;
                 $_SESSION['user_name'] = $user->name;
+                $_SESSION['user_role'] = $user->role;
                 $_SESSION['last_activity'] = time();
+                
+                // Debug session
+                error_log("Session role set to: " . $_SESSION['user_role']);
                 
                 header('Location: /mainApp');
                 exit;

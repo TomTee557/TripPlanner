@@ -1,11 +1,12 @@
 import { currencies, currencyConverter } from '/public/scripts/infrastructure/currencyConverterLogic.js';
-import { availablePictures, tripTypeLabels, PictureSelectionContext, BREAKPOINTS } from '/public/scripts/consts.js';
+import { availablePictures, tripTypeLabels, PictureSelectionContext, BREAKPOINTS, UserRole } from '/public/scripts/consts.js';
 import { inactivityTimer } from '/public/scripts/helpers/InactivityTimer.js';
 import { loadTripsFromAPI } from '/public/scripts/helpers/loadTripsFromAPI.js';
 import { GetTripsLogic } from '/public/scripts/infrastructure/GetTripsLogic.js';
 import { AddTripLogic } from '/public/scripts/infrastructure/AddTripLogic.js';
 import { UpdateTripLogic } from '/public/scripts/infrastructure/UpdateTripLogic.js';
 import { DeleteTripLogic } from '/public/scripts/infrastructure/DeleteTripLogic.js';
+import { UserManagementLogic } from '/public/scripts/infrastructure/UserManagementLogic.js';
 
 // Data for trips - will be loaded from API
 let fetchedTrips = [];
@@ -14,8 +15,14 @@ let selectedPicture = null;
 let pictureSelectionContext = PictureSelectionContext.ADD;
 let filteredTrips = [];
 
+// User management data
+let currentUsers = [];
+let currentUserRole = null;
+let userToChangePassword = null;
+let pendingRoleChange = null; // For storing role change data
+
 // DOM elements - will be initialized after DOM is loaded
-let searchPanel, showSearchBtn, closeSearchBtn, searchForm, clearFiltersBtn, tripsList, addTripBtn;
+let searchPanel, showSearchBtn, closeSearchBtn, searchForm, clearFiltersBtn, tripsList, addTripBtn, manageUsersBtn;
 
 // Initialize the app
 document.addEventListener('DOMContentLoaded', async function() {
@@ -27,7 +34,15 @@ document.addEventListener('DOMContentLoaded', async function() {
   clearFiltersBtn = document.getElementById('clearFiltersBtn');
   tripsList = document.getElementById('tripsList');
   addTripBtn = document.getElementById('addTripBtn');
+  manageUsersBtn = document.getElementById('manageUsersBtn');
   
+  // Initialize user role and UI permissions
+  currentUserRole = window.currentUserRole || 'USER';
+  console.log('Window.currentUserRole from PHP:', window.currentUserRole);
+  console.log('CurrentUserRole assigned:', currentUserRole);
+  console.log('UserRole.ADMIN constant:', UserRole.ADMIN);
+  console.log('Role comparison result:', currentUserRole === UserRole.ADMIN);
+  initializeUserRoleUI();
   
   initializeClock();
   
@@ -95,6 +110,22 @@ function updateClock() {
   if (dateElementMobile) dateElementMobile.textContent = dateString;
 }
 
+// User role UI initialization
+function initializeUserRoleUI() {
+  console.log('Initializing user role UI. Current role:', currentUserRole);
+  
+  // Show manage users button only for ADMIN users
+  if (manageUsersBtn) {
+    if (currentUserRole === UserRole.ADMIN) {
+      manageUsersBtn.style.display = 'block';
+      console.log('Admin role detected - showing manage users button');
+    } else {
+      manageUsersBtn.style.display = 'none';
+      console.log('Non-admin role detected - hiding manage users button');
+    }
+  }
+}
+
 // Event listeners setup
 function setupEventListeners() {
   // Search panel toggle (mobile)
@@ -120,6 +151,9 @@ function setupEventListeners() {
   
   // Add trip button
   addTripBtn?.addEventListener('click', handleAddTrip);
+  
+  // Manage users button (admin only)
+  manageUsersBtn?.addEventListener('click', handleManageUsers);
   
   // Trip type dropdown
   setupTripTypeDropdown();
@@ -1153,5 +1187,350 @@ async function deleteTrip(tripId) {
   } catch (error) {
     console.error('Failed to delete trip:', error.message);
     showPopup(`Failed to delete trip: ${error.message}`, "Error");
+  }
+}
+
+// ========================================
+// USER MANAGEMENT FUNCTIONS
+// ========================================
+
+// Handle manage users button click
+async function handleManageUsers() {
+  console.log('Handle manage users clicked');
+  
+  if (currentUserRole !== UserRole.ADMIN) {
+    showPopup('Access denied. Admin privileges required.', 'Error');
+    return;
+  }
+  
+  try {
+    // Load users from API
+    const result = await UserManagementLogic.getUsers();
+    
+    if (result.success) {
+      currentUsers = result.users;
+      renderUsersList();
+      showManageUsersPopup();
+    } else {
+      throw new Error(result.message || 'Failed to load users');
+    }
+  } catch (error) {
+    console.error('Failed to load users:', error.message);
+    showPopup(`Failed to load users: ${error.message}`, 'Error');
+  }
+}
+
+// Show manage users popup
+function showManageUsersPopup() {
+  const popup = document.getElementById('manageUsersPopupOverlay');
+  if (popup) {
+    popup.style.display = 'flex';
+    popup.classList.add('fade-in');
+  }
+}
+
+// Hide manage users popup
+function hideManageUsersPopup() {
+  const popup = document.getElementById('manageUsersPopupOverlay');
+  if (popup) {
+    popup.classList.remove('fade-in');
+    popup.style.display = 'none';
+  }
+}
+
+// Render users list in the popup
+function renderUsersList() {
+  const usersList = document.getElementById('usersList');
+  if (!usersList || !currentUsers.length) {
+    if (usersList) {
+      usersList.innerHTML = '<p class="no-users">No users found.</p>';
+    }
+    return;
+  }
+  
+  usersList.innerHTML = currentUsers.map(user => `
+    <div class="user-item" data-user-id="${user.id}">
+      <div class="user-info">
+        <div class="user-info__field">
+          <span class="user-info__label">Email:</span>
+          <span class="user-info__value">${user.email}</span>
+        </div>
+        <div class="user-info__field">
+          <span class="user-info__label">Name:</span>
+          <span class="user-info__value">${user.name}</span>
+        </div>
+        <div class="user-info__field">
+          <span class="user-info__label">Surname:</span>
+          <span class="user-info__value">${user.surname}</span>
+        </div>
+        <div class="user-info__field">
+          <span class="user-info__label">Role:</span>
+          <span class="user-info__value user-role ${user.role.toLowerCase()}">${user.role}</span>
+        </div>
+        <div class="user-info__field">
+          <span class="user-info__label">ID:</span>
+          <span class="user-info__value">${user.id}</span>
+        </div>
+      </div>
+      <div class="user-actions">
+        <button class="popup__button popup__button--secondary btn-change-role" data-user-id="${user.id}" data-current-role="${user.role}" data-user-email="${user.email}">
+          Change Role
+        </button>
+        <button class="popup__button popup__button--secondary btn-change-password" data-user-id="${user.id}" data-user-email="${user.email}">
+          Change Password
+        </button>
+      </div>
+    </div>
+  `).join('');
+  
+  // Add event listeners for user action buttons
+  setupUserActionListeners();
+}
+
+// Setup event listeners for user management actions
+function setupUserActionListeners() {
+  // Close popup button
+  const closeBtn = document.querySelector('#manageUsersPopupOverlay .popup__close');
+  const backBtn = document.getElementById('manageUsersBackBtn');
+  closeBtn?.addEventListener('click', hideManageUsersPopup);
+  backBtn?.addEventListener('click', hideManageUsersPopup);
+  
+  // Change role buttons
+  document.querySelectorAll('.btn-change-role').forEach(btn => {
+    btn.addEventListener('click', handleChangeUserRole);
+  });
+  
+  // Change password buttons
+  document.querySelectorAll('.btn-change-password').forEach(btn => {
+    btn.addEventListener('click', handleChangeUserPassword);
+  });
+  
+  // Close popup when clicking outside
+  const popup = document.getElementById('manageUsersPopupOverlay');
+  popup?.addEventListener('click', (e) => {
+    if (e.target === popup) {
+      hideManageUsersPopup();
+    }
+  });
+}
+
+// Handle change user role
+async function handleChangeUserRole(event) {
+  const userId = event.target.dataset.userId;
+  const currentRole = event.target.dataset.currentRole;
+  const userEmail = event.target.dataset.userEmail;
+  const newRole = currentRole === UserRole.ADMIN ? UserRole.USER : UserRole.ADMIN;
+  
+  // Store pending role change data
+  pendingRoleChange = {
+    userId,
+    currentRole,
+    newRole,
+    userEmail
+  };
+  
+  // Show custom confirmation popup
+  showConfirmRoleChangePopup();
+}
+
+// Show confirm role change popup
+function showConfirmRoleChangePopup() {
+  if (!pendingRoleChange) return;
+  
+  const popup = document.getElementById('confirmRoleChangePopupOverlay');
+  const messageEl = document.getElementById('confirmRoleChangeMessage');
+  
+  if (popup && messageEl) {
+    messageEl.textContent = `Change user "${pendingRoleChange.userEmail}" role from ${pendingRoleChange.currentRole} to ${pendingRoleChange.newRole}?`;
+    popup.style.display = 'flex';
+    popup.classList.add('fade-in');
+    
+    // Setup event listeners
+    setupConfirmRoleChangeListeners();
+  }
+}
+
+// Hide confirm role change popup
+function hideConfirmRoleChangePopup() {
+  const popup = document.getElementById('confirmRoleChangePopupOverlay');
+  if (popup) {
+    popup.classList.remove('fade-in');
+    popup.style.display = 'none';
+  }
+  pendingRoleChange = null;
+}
+
+// Setup confirm role change listeners
+function setupConfirmRoleChangeListeners() {
+  const closeBtn = document.querySelector('#confirmRoleChangePopupOverlay .popup__close');
+  const cancelBtn = document.getElementById('confirmRoleChangeCancel');
+  const confirmBtn = document.getElementById('confirmRoleChangeConfirm');
+  const popup = document.getElementById('confirmRoleChangePopupOverlay');
+  
+  // Remove existing listeners
+  closeBtn?.removeEventListener('click', hideConfirmRoleChangePopup);
+  cancelBtn?.removeEventListener('click', hideConfirmRoleChangePopup);
+  confirmBtn?.removeEventListener('click', executeRoleChange);
+  
+  // Add new listeners
+  closeBtn?.addEventListener('click', hideConfirmRoleChangePopup);
+  cancelBtn?.addEventListener('click', hideConfirmRoleChangePopup);
+  confirmBtn?.addEventListener('click', executeRoleChange);
+  
+  // Close popup when clicking outside
+  popup?.addEventListener('click', (e) => {
+    if (e.target === popup) {
+      hideConfirmRoleChangePopup();
+    }
+  });
+}
+
+// Execute the role change
+async function executeRoleChange() {
+  if (!pendingRoleChange) return;
+  
+  // Store values before hiding popup (which nullifies pendingRoleChange)
+  const { userId, newRole } = pendingRoleChange;
+  
+  try {
+    const result = await UserManagementLogic.updateUserRole(userId, newRole);
+    
+    if (result.success) {
+      // Update local user data
+      const userIndex = currentUsers.findIndex(u => u.id == userId);
+      if (userIndex !== -1) {
+        currentUsers[userIndex].role = newRole;
+      }
+      
+      // Hide confirm popup
+      hideConfirmRoleChangePopup();
+      
+      // Re-render users list
+      renderUsersList();
+      showPopup(`User role updated to ${newRole} successfully!`, 'Success');
+    } else {
+      throw new Error(result.message || 'Failed to update user role');
+    }
+  } catch (error) {
+    console.error('Failed to update user role:', error.message);
+    showPopup(`Failed to update user role: ${error.message}`, 'Error');
+    hideConfirmRoleChangePopup();
+  }
+}
+
+// Handle change user password
+function handleChangeUserPassword(event) {
+  const userId = event.target.dataset.userId;
+  const userEmail = event.target.dataset.userEmail;
+  
+  userToChangePassword = { id: userId, email: userEmail };
+  showChangePasswordPopup();
+}
+
+// Show change password popup
+function showChangePasswordPopup() {
+  const popup = document.getElementById('changePasswordPopupOverlay');
+  const emailDiv = document.getElementById('changePasswordUserEmail');
+  
+  if (popup && emailDiv && userToChangePassword) {
+    emailDiv.textContent = userToChangePassword.email;
+    popup.style.display = 'flex';
+    popup.classList.add('fade-in');
+    
+    // Setup change password form listener
+    setupChangePasswordForm();
+  }
+}
+
+// Hide change password popup
+function hideChangePasswordPopup() {
+  const popup = document.getElementById('changePasswordPopupOverlay');
+  if (popup) {
+    popup.classList.remove('fade-in');
+    popup.style.display = 'none';
+  }
+  
+  // Reset form
+  const form = document.getElementById('changePasswordForm');
+  if (form) {
+    form.reset();
+  }
+  
+  userToChangePassword = null;
+}
+
+// Setup change password form
+function setupChangePasswordForm() {
+  const form = document.getElementById('changePasswordForm');
+  const closeBtn = document.querySelector('#changePasswordPopupOverlay .popup__close');
+  const cancelBtn = document.getElementById('changePasswordBackBtn');
+  const popup = document.getElementById('changePasswordPopupOverlay');
+  
+  // Remove existing listeners to prevent duplicates
+  const newForm = form.cloneNode(true);
+  form.parentNode.replaceChild(newForm, form);
+  
+  // Add form submit listener
+  newForm.addEventListener('submit', handleChangePasswordSubmit);
+  
+  // Add close button listener (X button)
+  closeBtn?.addEventListener('click', hideChangePasswordPopup);
+  
+  // Add cancel button listener
+  cancelBtn?.addEventListener('click', hideChangePasswordPopup);
+  
+  // Close popup when clicking outside
+  popup?.addEventListener('click', (e) => {
+    if (e.target === popup) {
+      hideChangePasswordPopup();
+    }
+  });
+}
+
+// Handle change password form submit
+async function handleChangePasswordSubmit(event) {
+  event.preventDefault();
+  
+  if (!userToChangePassword) {
+    showPopup('No user selected for password change', 'Error');
+    return;
+  }
+  
+  const formData = new FormData(event.target);
+  const newPassword = formData.get('newPassword');
+  const confirmPassword = formData.get('confirmPassword');
+  
+  // Validate passwords
+  if (!newPassword || !confirmPassword) {
+    showPopup('Please fill in all password fields', 'Error');
+    return;
+  }
+  
+  if (newPassword !== confirmPassword) {
+    showPopup('Passwords do not match', 'Error');
+    return;
+  }
+  
+  if (newPassword.length < 6) {
+    showPopup('Password must be at least 6 characters long', 'Error');
+    return;
+  }
+  
+  try {
+    // Store user info before hiding popup
+    const userId = userToChangePassword.id;
+    const userEmail = userToChangePassword.email;
+    
+    const result = await UserManagementLogic.updateUserPassword(userId, newPassword);
+    
+    if (result.success) {
+      hideChangePasswordPopup();
+      showPopup(`Password updated successfully for ${userEmail}!`, 'Success');
+    } else {
+      throw new Error(result.message || 'Failed to update password');
+    }
+  } catch (error) {
+    console.error('Failed to update password:', error.message);
+    showPopup(`Failed to update password: ${error.message}`, 'Error');
   }
 }

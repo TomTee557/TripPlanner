@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS users (
     surname VARCHAR(100) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
+    role VARCHAR(20) DEFAULT 'USER' CHECK (role IN ('USER', 'ADMIN')),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -20,8 +21,8 @@ CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 -- Insert default admin user with properly hashed password
 -- Password: 'admin' - in production use a strong password!
 -- Using PostgreSQL's crypt function with blowfish algorithm
-INSERT INTO users (name, surname, email, password) 
-VALUES ('Admin', 'Admin', 'admin@admin.com', crypt('admin', gen_salt('bf')))
+INSERT INTO users (name, surname, email, password, role) 
+VALUES ('Admin', 'Admin', 'admin@admin.com', crypt('admin', gen_salt('bf')), 'ADMIN')
 ON CONFLICT (email) DO NOTHING;
 
 -- Create trips table (for future use)

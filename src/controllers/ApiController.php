@@ -3,6 +3,7 @@
 require_once 'AppController.php';
 require_once 'src/repository/TripRepository.php';
 require_once 'src/repository/UserRepository.php';
+require_once 'src/helpers/PasswordHelper.php';
 
 class ApiController extends AppController {
 
@@ -60,6 +61,25 @@ class ApiController extends AppController {
         $_SESSION['last_activity'] = time();
         
         return $_SESSION['user_email'];
+    }
+
+    /**
+     * Checks if current user has admin role
+     */
+    private function checkAdminAuth() {
+        $userEmail = $this->checkAuth(); // Check basic auth first
+        
+        if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'ADMIN') {
+            http_response_code(403);
+            header('Content-Type: application/json');
+            echo json_encode([
+                'error' => 'Access denied',
+                'message' => 'Administrator privileges required'
+            ]);
+            exit;
+        }
+        
+        return $userEmail;
     }
 
     /**
@@ -285,6 +305,153 @@ class ApiController extends AppController {
             echo json_encode([
                 'error' => 'Database error',
                 'message' => 'Unable to update trip. Please try again later.'
+            ]);
+        }
+    }
+
+    /**
+     * GET /api/users - get all users (admin only)
+     */
+    public function getUsers() {
+        $this->checkAdminAuth(); // Admin only
+        
+        try {
+            $users = $this->userRepository->findAll();
+            
+            // Remove password from response
+            $safeUsers = array_map(function($user) {
+                return [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'surname' => $user->surname,
+                    'email' => $user->email,
+                    'role' => $user->role
+                ];
+            }, $users);
+            
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => true,
+                'users' => $safeUsers
+            ]);
+            
+        } catch (Exception $e) {
+            error_log("Error fetching users: " . $e->getMessage());
+            http_response_code(500);
+            header('Content-Type: application/json');
+            echo json_encode([
+                'error' => 'Database error',
+                'message' => 'Unable to fetch users. Please try again later.'
+            ]);
+        }
+    }
+
+    /**
+     * POST /api/users/role - update user role (admin only)
+     */
+    public function updateUserRole() {
+        $this->checkAdminAuth(); // Admin only
+        
+        if (!$this->isPost()) {
+            http_response_code(405);
+            header('Content-Type: application/json');
+            echo json_encode(['error' => 'Method not allowed']);
+            exit;
+        }
+        
+        try {
+            $input = json_decode(file_get_contents('php://input'), true);
+            
+            if (!isset($input['userId']) || !isset($input['role'])) {
+                http_response_code(400);
+                header('Content-Type: application/json');
+                echo json_encode([
+                    'error' => 'Missing required fields',
+                    'message' => 'User ID and role are required'
+                ]);
+                exit;
+            }
+            
+            $userId = $input['userId'];
+            $newRole = $input['role'];
+            
+            // Validate role
+            if (!in_array($newRole, ['USER', 'ADMIN'])) {
+                http_response_code(400);
+                header('Content-Type: application/json');
+                echo json_encode([
+                    'error' => 'Invalid role',
+                    'message' => 'Role must be USER or ADMIN'
+                ]);
+                exit;
+            }
+            
+            $this->userRepository->updateRole($userId, $newRole);
+            
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => true,
+                'message' => 'User role updated successfully'
+            ]);
+            
+        } catch (Exception $e) {
+            error_log("Error updating user role: " . $e->getMessage());
+            http_response_code(500);
+            header('Content-Type: application/json');
+            echo json_encode([
+                'error' => 'Database error',
+                'message' => 'Unable to update user role. Please try again later.'
+            ]);
+        }
+    }
+
+    /**
+     * POST /api/users/password - update user password (admin only)
+     */
+    public function updateUserPassword() {
+        $this->checkAdminAuth(); // Admin only
+        
+        if (!$this->isPost()) {
+            http_response_code(405);
+            header('Content-Type: application/json');
+            echo json_encode(['error' => 'Method not allowed']);
+            exit;
+        }
+        
+        try {
+            $input = json_decode(file_get_contents('php://input'), true);
+            
+            if (!isset($input['userId']) || !isset($input['password'])) {
+                http_response_code(400);
+                header('Content-Type: application/json');
+                echo json_encode([
+                    'error' => 'Missing required fields',
+                    'message' => 'User ID and password are required'
+                ]);
+                exit;
+            }
+            
+            $userId = $input['userId'];
+            $newPassword = $input['password'];
+            
+            // Hash the password
+            $hashedPassword = PasswordHelper::hash($newPassword);
+            
+            $this->userRepository->updatePassword($userId, $hashedPassword);
+            
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => true,
+                'message' => 'User password updated successfully'
+            ]);
+            
+        } catch (Exception $e) {
+            error_log("Error updating user password: " . $e->getMessage());
+            http_response_code(500);
+            header('Content-Type: application/json');
+            echo json_encode([
+                'error' => 'Database error',
+                'message' => 'Unable to update user password. Please try again later.'
             ]);
         }
     }

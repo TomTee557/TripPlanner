@@ -24,7 +24,8 @@ class UserRepository {
             $userData['surname'],
             $userData['email'],
             $userData['password'],
-            $userData['id']
+            $userData['id'],
+            $userData['role']
         );
     }
     
@@ -35,12 +36,13 @@ class UserRepository {
             throw new Exception("User with this email already exists");
         }
         
-        $sql = "INSERT INTO users (name, surname, email, password) VALUES (?, ?, ?, ?)";
+        $sql = "INSERT INTO users (name, surname, email, password, role) VALUES (?, ?, ?, ?, ?)";
         return $this->database->execute($sql, [
             $user->name,
             $user->surname, 
             $user->email,
-            $user->password
+            $user->password,
+            $user->role ?: 'USER'
         ]);
     }
     
@@ -55,7 +57,8 @@ class UserRepository {
                 $userData['surname'],
                 $userData['email'],
                 $userData['password'],
-                $userData['id']
+                $userData['id'],
+                $userData['role']
             );
         }
         
@@ -65,5 +68,34 @@ class UserRepository {
     public function deleteByEmail($email) {
         $sql = "DELETE FROM users WHERE LOWER(email) = LOWER(?)";
         return $this->database->execute($sql, [$email]);
+    }
+    
+    public function updateRole($userId, $role) {
+        $sql = "UPDATE users SET role = ? WHERE id = ?";
+        return $this->database->execute($sql, [$role, $userId]);
+    }
+    
+    public function updatePassword($userId, $hashedPassword) {
+        $sql = "UPDATE users SET password = ? WHERE id = ?";
+        return $this->database->execute($sql, [$hashedPassword, $userId]);
+    }
+    
+    public function findById($userId) {
+        $sql = "SELECT * FROM users WHERE id = ?";
+        $result = $this->database->query($sql, [$userId]);
+        
+        if (empty($result)) {
+            return null;
+        }
+        
+        $userData = $result[0];
+        return new User(
+            $userData['name'],
+            $userData['surname'],
+            $userData['email'],
+            $userData['password'],
+            $userData['id'],
+            $userData['role']
+        );
     }
 }

@@ -52,3 +52,12 @@ export const BREAKPOINTS = {
 
 // Session management
 export const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes in milliseconds
+
+// User roles enum
+export const UserRole = {
+  ADMIN: 'ADMIN',
+  USER: 'USER'
+};
+
+// Default role for new users
+export const DEFAULT_USER_ROLE = UserRole.USER;

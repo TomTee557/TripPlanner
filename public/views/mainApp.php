@@ -123,10 +123,15 @@
     <div class="main-app__trips">
       <div class="main-app__trips-header">
         <h2 class="main-app__trips-title">All trips:</h2>
-        <button class="main-app__add-trip" id="addTripBtn">
-          <span>Add trip</span>
-          <span>+</span>
-        </button>
+        <div class="main-app__trips-actions">
+          <button class="main-app__manage-users-btn" id="manageUsersBtn" style="display: none;">
+            Manage users
+          </button>
+          <button class="main-app__add-trip" id="addTripBtn">
+            <span>Add trip</span>
+            <span>+</span>
+          </button>
+        </div>
       </div>
       
       <div class="main-app__trips-list" id="tripsList">
@@ -431,6 +436,86 @@
     </div>
   </div>
 
+  <!-- User Management Popup (Admin Only) -->
+  <div class="popup-overlay" id="manageUsersPopupOverlay" style="display: none;">
+    <div class="popup popup--manage-users">
+      <div class="popup__header">
+        <h3 class="popup__title">Manage Users</h3>
+        <button class="popup__close" id="manageUsersPopupClose">&times;</button>
+      </div>
+      <div class="popup__content">
+        <div class="user-management">
+          <div class="user-management__loading" id="usersLoading" style="display: none;">
+            <div class="spinner"></div>
+            <span>Loading users...</span>
+          </div>
+          <div class="user-management__list" id="usersList">
+            <!-- Users will be populated by JavaScript -->
+          </div>
+        </div>
+      </div>
+      <div class="popup__actions">
+        <button type="button" class="popup__button popup__button--secondary" id="manageUsersBackBtn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Change Password Popup -->
+  <div class="popup-overlay" id="changePasswordPopupOverlay" style="display: none;">
+    <div class="popup popup--change-password">
+      <div class="popup__header">
+        <h3 class="popup__title">Change User Password</h3>
+        <button class="popup__close" id="changePasswordPopupClose">&times;</button>
+      </div>
+      <div class="popup__content">
+        <form id="changePasswordForm" class="change-password-form">
+          <div class="change-password-form__field">
+            <label class="change-password-form__label">User:</label>
+            <div id="changePasswordUserEmail" class="change-password-form__user-info">
+              <!-- User email will be populated by JavaScript -->
+            </div>
+          </div>
+          <div class="change-password-form__field">
+            <label class="change-password-form__label" for="newPassword">New Password:</label>
+            <input type="password" id="newPassword" name="newPassword" class="change-password-form__input" required minlength="4">
+          </div>
+          <div class="change-password-form__field">
+            <label class="change-password-form__label" for="confirmPassword">Confirm Password:</label>
+            <input type="password" id="confirmPassword" name="confirmPassword" class="change-password-form__input" required minlength="4">
+          </div>
+        </form>
+      </div>
+      <div class="popup__actions">
+        <button type="button" class="popup__button popup__button--secondary" id="changePasswordBackBtn">Cancel</button>
+        <button type="submit" form="changePasswordForm" class="popup__button popup__button--primary" id="changePasswordSubmitBtn">Change Password</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm Role Change Popup -->
+  <div class="popup-overlay" id="confirmRoleChangePopupOverlay" style="display: none;">
+    <div class="popup popup--confirm">
+      <div class="popup__header">
+        <h3 class="popup__title">Confirm Role Change</h3>
+        <button class="popup__close" id="confirmRoleChangePopupClose">&times;</button>
+      </div>
+      <div class="popup__content">
+        <p id="confirmRoleChangeMessage">Are you sure you want to change this user's role?</p>
+      </div>
+      <div class="popup__actions">
+        <button type="button" class="popup__button popup__button--secondary" id="confirmRoleChangeCancel">Cancel</button>
+        <button type="button" class="popup__button popup__button--primary" id="confirmRoleChangeConfirm">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Pass user role from PHP to JavaScript
+    window.currentUserRole = '<?php echo $_SESSION['user_role'] ?? 'USER'; ?>';
+    console.log('PHP Session user_role:', '<?php echo $_SESSION['user_role'] ?? 'NOT_SET'; ?>');
+    console.log('Window.currentUserRole set to:', window.currentUserRole);
+  </script>
+  
   <script type="module" src="/public/scripts/infrastructure/TripLogic.js"></script>
   <script type="module" src="/public/scripts/mainApp.js"></script>
 </body>
