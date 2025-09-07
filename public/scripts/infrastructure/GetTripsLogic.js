@@ -40,7 +40,7 @@ export class GetTripsLogic {
             return result.data || [];
         } catch (error) {
             // Return empty array on error
-            // UI layer should handle error messages
+            // UI layer handle error messages
             return [];
         }
     }

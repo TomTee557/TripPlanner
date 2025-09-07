@@ -4,6 +4,7 @@ require_once 'AppController.php';
 require_once 'src/models/User.php';
 require_once 'src/repository/UserRepository.php';
 require_once 'src/helpers/PasswordHelper.php';
+require_once 'src/helpers/SecurityHelper.php';
 
 class SecurityController extends AppController {
 
@@ -15,9 +16,7 @@ class SecurityController extends AppController {
 
     public function login()
     {
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        SecurityHelper::initSession();
         
         if (!$this->isPost()) {
             return $this->render('auth');
@@ -30,15 +29,16 @@ class SecurityController extends AppController {
             $user = $this->userRepository->findByEmail($email);
             
             if ($user && PasswordHelper::verify($password, $user->password)) {
-                // Debug logging
                 error_log("Login successful for user: " . $user->email . ", role: " . $user->role);
+                
+                // Regenerate session ID for security (prevents session fixation)
+                SecurityHelper::regenerateSessionId();
                 
                 // Set user session
                 $_SESSION['user_logged_in'] = true;
                 $_SESSION['user_email'] = $user->email;
                 $_SESSION['user_name'] = $user->name;
                 $_SESSION['user_role'] = $user->role;
-                $_SESSION['last_activity'] = time();
                 
                 // Debug session
                 error_log("Session role set to: " . $_SESSION['user_role']);
@@ -63,9 +63,7 @@ class SecurityController extends AppController {
 
     public function register()
     {
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        SecurityHelper::initSession();
         
         if (!$this->isPost()) {
             return $this->render('auth');
@@ -124,15 +122,13 @@ class SecurityController extends AppController {
 
     public function logout()
     {
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        SecurityHelper::initSession();
 
         // Clear user session data
         unset($_SESSION['user_logged_in']);
         unset($_SESSION['user_email']);
         unset($_SESSION['user_name']);
-        unset($_SESSION['last_activity']);
+        unset($_SESSION['user_role']);
         
         // Set logout message based on reason
         $logoutReason = $_POST['logout_reason'] ?? 'manual';
@@ -159,18 +155,15 @@ class SecurityController extends AppController {
      */
     private function logUserActivity($userId, $action, $details = '') {
         try {
-            // Simple logging to error_log for now
-            // In production, this could write to a separate audit table
             $timestamp = date('Y-m-d H:i:s');
             $logMessage = "User Activity: UserID={$userId}, Action={$action}, Details={$details}, Time={$timestamp}";
             error_log($logMessage);
             
-            // Future implementation could insert into audit_log table:
+            // Future implementation for example: insert into audit_log table:
             // $sql = "INSERT INTO audit_log (user_id, action, details, created_at) VALUES (?, ?, ?, NOW())";
             // $this->database->execute($sql, [$userId, $action, $details]);
             
         } catch (Exception $e) {
-            // Don't let logging errors break the main operation
             error_log("Failed to log user activity: " . $e->getMessage());
         }
     }

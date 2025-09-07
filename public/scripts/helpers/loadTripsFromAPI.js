@@ -1,6 +1,3 @@
-// Helper function for loading trips from API
-// Handles initial data loading and error handling
-
 import { GetTripsLogic } from '../infrastructure/GetTripsLogic.js';
 
 /**

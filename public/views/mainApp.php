@@ -530,6 +530,26 @@
     </div>
   </div>
 
+  <!-- Confirm Delete Trip Popup -->
+  <div class="popup-overlay popup--danger" id="confirmDeleteTripPopupOverlay" style="display: none;">
+    <div class="popup">
+      <div class="popup__header">
+        <h3 class="popup__title">Delete Trip</h3>
+        <button class="popup__close" id="confirmDeleteTripPopupClose">&times;</button>
+      </div>
+      <div class="popup__content">
+        <div class="popup__warning">
+          <p id="confirmDeleteTripMessage">Are you sure you want to delete this trip?</p>
+          <p class="popup__consequence">This action cannot be undone.</p>
+        </div>
+      </div>
+      <div class="popup__actions">
+        <button type="button" class="popup__button popup__button--secondary" id="confirmDeleteTripCancel">Cancel</button>
+        <button type="button" class="popup__button popup__button--danger" id="confirmDeleteTripConfirm">Delete Trip</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // Pass user role from PHP to JavaScript
     window.currentUserRole = '<?php echo $_SESSION['user_role'] ?? 'USER'; ?>';

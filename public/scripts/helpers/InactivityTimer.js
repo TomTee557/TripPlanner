@@ -1,15 +1,5 @@
 import { SESSION_TIMEOUT } from '/public/scripts/consts.js';
 
-/**
- * InactivityTimer - Handles user session management and inactivity tracking
- * 
- * Features:
- * - Tracks user activity across multiple events
- * - Shows warning popup before logout
- * - Handles automatic logout due to inactivity
- * - Manages tab visibility changes
- * - Handles browser close events
- */
 export class InactivityTimer {
   constructor(options = {}) {
     this.timeout = options.timeout || SESSION_TIMEOUT;
@@ -42,9 +32,6 @@ export class InactivityTimer {
     console.log('InactivityTimer initialized');
   }
 
-  /**
-   * Reset the inactivity timer
-   */
   resetTimer() {
     this.lastActivity = Date.now();
     clearTimeout(this.sessionTimer);
@@ -70,9 +57,6 @@ export class InactivityTimer {
     }, this.warningTime);
   }
 
-  /**
-   * Perform logout
-   */
   performLogout(reason = 'manual') {
     if (this.onLogout) {
       this.onLogout(reason);
@@ -81,9 +65,6 @@ export class InactivityTimer {
     }
   }
 
-  /**
-   * Default logout implementation
-   */
   defaultLogout(reason = 'manual') {
     const form = document.createElement('form');
     form.method = 'POST';
@@ -100,16 +81,10 @@ export class InactivityTimer {
     form.submit();
   }
 
-  /**
-   * Track user activity
-   */
   trackActivity() {
     this.resetTimer();
   }
 
-  /**
-   * Bind activity event listeners
-   */
   bindActivityEvents() {
     this.activityEvents.forEach(event => {
       document.addEventListener(event, () => this.trackActivity(), true);
@@ -170,22 +145,13 @@ export class InactivityTimer {
     console.log('InactivityTimer destroyed');
   }
 
-  /**
-   * Get time since last activity
-   */
   getTimeSinceLastActivity() {
     return Date.now() - this.lastActivity;
   }
 
-  /**
-   * Check if user is inactive
-   */
   isInactive(threshold = this.timeout) {
     return this.getTimeSinceLastActivity() > threshold;
   }
 }
 
-/**
- * Create and export a singleton instance
- */
 export const inactivityTimer = new InactivityTimer();

@@ -20,11 +20,11 @@ class Router {
         $method = $_SERVER['REQUEST_METHOD'];
         $action = $url ?: 'auth';
         
-        // Sprawdź czy to endpoint API
+        // Check if this is the API endpoint - no related with view management
         $isApiEndpoint = strpos($action, 'api/') === 0;
         
         if (!isset(self::$routes[$method][$action])) {
-            // Dla endpointów API zwróć JSON 404
+            // For API endpoints, return JSON 404
             if ($isApiEndpoint) {
                 http_response_code(404);
                 header('Content-Type: application/json');

@@ -141,7 +141,4 @@ registerForm?.addEventListener('submit', e => {
     e.preventDefault();
     showErrorMessage(errorMessage || 'Please fill in all fields correctly', 'register');
   }
-  
-  // If validation passes, form will be submitted to PHP backend
-  // SecurityController::register() will handle database operations and return appropriate messages
 });

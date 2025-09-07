@@ -2,7 +2,6 @@ import { currencies, currencyConverter } from '/public/scripts/infrastructure/cu
 import { availablePictures, tripTypeLabels, PictureSelectionContext, BREAKPOINTS, UserRole } from '/public/scripts/consts.js';
 import { inactivityTimer } from '/public/scripts/helpers/InactivityTimer.js';
 import { loadTripsFromAPI } from '/public/scripts/helpers/loadTripsFromAPI.js';
-import { GetTripsLogic } from '/public/scripts/infrastructure/GetTripsLogic.js';
 import { AddTripLogic } from '/public/scripts/infrastructure/AddTripLogic.js';
 import { UpdateTripLogic } from '/public/scripts/infrastructure/UpdateTripLogic.js';
 import { DeleteTripLogic } from '/public/scripts/infrastructure/DeleteTripLogic.js';
@@ -19,8 +18,8 @@ let filteredTrips = [];
 let currentUsers = [];
 let currentUserRole = null;
 let userToChangePassword = null;
-let pendingRoleChange = null; // For storing role change data
-let userToDelete = null; // For storing user delete data
+let pendingRoleChange = null;
+let userToDelete = null;
 
 // DOM elements - will be initialized after DOM is loaded
 let searchPanel, showSearchBtn, closeSearchBtn, searchForm, clearFiltersBtn, tripsList, addTripBtn, manageUsersBtn;
@@ -38,11 +37,11 @@ document.addEventListener('DOMContentLoaded', async function() {
   manageUsersBtn = document.getElementById('manageUsersBtn');
   
   // Initialize user role and UI permissions
+  // setted to window scope by php 
   currentUserRole = window.currentUserRole || 'USER';
   console.log('Window.currentUserRole from PHP:', window.currentUserRole);
   console.log('CurrentUserRole assigned:', currentUserRole);
-  console.log('UserRole.ADMIN constant:', UserRole.ADMIN);
-  console.log('Role comparison result:', currentUserRole === UserRole.ADMIN);
+
   initializeUserRoleUI();
   
   initializeClock();
@@ -111,7 +110,6 @@ function updateClock() {
   if (dateElementMobile) dateElementMobile.textContent = dateString;
 }
 
-// User role UI initialization
 function initializeUserRoleUI() {
   console.log('Initializing user role UI. Current role:', currentUserRole);
   
@@ -127,7 +125,6 @@ function initializeUserRoleUI() {
   }
 }
 
-// Event listeners setup
 function setupEventListeners() {
   // Search panel toggle (mobile)
   showSearchBtn?.addEventListener('click', () => {
@@ -161,6 +158,9 @@ function setupEventListeners() {
   
   // Currency converter
   setupCurrencyConverter();
+  
+  // Confirm delete trip popup
+  setupConfirmDeleteTripListeners();
   
   // Event delegation for trip action buttons (prevents duplicate listeners)
   tripsList?.addEventListener('click', handleTripActions);
@@ -280,18 +280,16 @@ function handleSearch(e) {
     tags: formData.get('tags')?.toLowerCase()
   };
   
+  // Filter Trips
   filteredTrips = fetchedTrips.filter(trip => {
-    // Date from filter
     if (filters.dateFrom && trip.dateFrom < filters.dateFrom) {
       return false;
     }
-    
-    // Date to filter  
+     
     if (filters.dateTo && trip.dateTo > filters.dateTo) {
       return false;
     }
-    
-    // Trip type filter
+  
     if (filters.tripType.length > 0) {
       const hasMatchingType = trip.tripType.some(type => 
         filters.tripType.includes(type)
@@ -299,17 +297,14 @@ function handleSearch(e) {
       if (!hasMatchingType) return false;
     }
     
-    // Title filter
     if (filters.title && !trip.title.toLowerCase().includes(filters.title)) {
       return false;
     }
     
-    // Country filter
     if (filters.country && !trip.country.toLowerCase().includes(filters.country)) {
       return false;
     }
     
-    // Tags filter
     if (filters.tags) {
       const hasMatchingTag = trip.tags.some(tag => 
         tag.toLowerCase().includes(filters.tags)
@@ -651,7 +646,7 @@ function showPopup(message, title = "Information") {
 }
 
 function showTripDetails(tripId) {
-  console.log('📋 showTripDetails called with tripId:', tripId);
+  console.log('showTripDetails called with tripId:', tripId);
   const trip = fetchedTrips.find(t => t.id === tripId);
   if (!trip) {
     showPopup("Trip not found", "Error");
@@ -829,7 +824,7 @@ async function handleEditTripSave() {
   const budget = document.getElementById('editTripBudget').value.trim();
   const description = document.getElementById('editTripDescription').value.trim();
   
-  // Basic validation
+  // validation
   if (!title || !dateFrom || !dateTo || !country || !tripType) {
     showPopup("Please fill in all required fields (Title, Date from, Date to, Country, Trip type).", "Validation Error");
     reEnableButton();
@@ -1121,7 +1116,7 @@ function showCurrencyConverterPopup() {
   const overlay = document.getElementById('currencyConverterPopupOverlay');
   
   if (overlay) {
-    // Remove hidden class first (it has !important)
+    // Remove hidden class
     overlay.classList.remove('popup-overlay--hidden');
     overlay.style.display = 'flex';
     document.body.style.overflow = 'hidden';
@@ -1152,7 +1147,7 @@ function closeCurrencyConverterPopup() {
   }
 }
 
-// Delete trip function with API integration
+// Delete trip function
 async function deleteTrip(tripId) {
   const trip = fetchedTrips.find(t => t.id === tripId);
   if (!trip) {
@@ -1160,9 +1155,60 @@ async function deleteTrip(tripId) {
     return;
   }
   
-  // Show confirmation dialog
-  const confirmed = confirm(`Are you sure you want to delete the trip "${trip.title}"? This action cannot be undone.`);
-  if (!confirmed) {
+  // Show custom confirmation popup
+  showConfirmDeleteTripPopup(trip.title, tripId);
+}
+
+// Show confirm delete trip popup
+function showConfirmDeleteTripPopup(tripTitle, tripId) {
+  const popup = document.getElementById('confirmDeleteTripPopupOverlay');
+  const message = document.getElementById('confirmDeleteTripMessage');
+  
+  message.textContent = `Are you sure you want to delete the trip "${tripTitle}"?`;
+  popup.style.display = 'flex';
+  
+  // Store tripId for later use
+  popup.dataset.tripId = tripId;
+}
+
+// Hide confirm delete trip popup
+function hideConfirmDeleteTripPopup() {
+  const popup = document.getElementById('confirmDeleteTripPopupOverlay');
+  popup.style.display = 'none';
+  delete popup.dataset.tripId;
+}
+
+// Setup confirm delete trip listeners
+function setupConfirmDeleteTripListeners() {
+  const popup = document.getElementById('confirmDeleteTripPopupOverlay');
+  const closeBtn = document.getElementById('confirmDeleteTripPopupClose');
+  const cancelBtn = document.getElementById('confirmDeleteTripCancel');
+  const confirmBtn = document.getElementById('confirmDeleteTripConfirm');
+  
+  closeBtn.addEventListener('click', hideConfirmDeleteTripPopup);
+  cancelBtn.addEventListener('click', hideConfirmDeleteTripPopup);
+  
+  confirmBtn.addEventListener('click', async () => {
+    const tripId = popup.dataset.tripId;
+    if (tripId) {
+      await executeDeleteTrip(tripId);
+      hideConfirmDeleteTripPopup();
+    }
+  });
+  
+  // Close on overlay click
+  popup.addEventListener('click', (e) => {
+    if (e.target === popup) {
+      hideConfirmDeleteTripPopup();
+    }
+  });
+}
+
+// Execute the actual trip deletion
+async function executeDeleteTrip(tripId) {
+  const trip = fetchedTrips.find(t => t.id === tripId);
+  if (!trip) {
+    showPopup("Trip not found", "Error");
     return;
   }
   

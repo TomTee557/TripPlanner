@@ -1,7 +1,10 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+// if (session_status() === PHP_SESSION_NONE) {
+//     session_start();
+// }
+
+// Session is initialized by DefaultController::auth() via SecurityHelper::initSession()
+// No need to start session here manually
 if (!isset($messages)) $messages = [];
 if (!isset($formType)) $formType = null;
 if (empty($messages) && !empty($_SESSION['messages'])) {
@@ -21,7 +24,6 @@ if (empty($formType) && !empty($_SESSION['formType'])) {
   <title>Trip Planner - Auth</title>
   <link rel="stylesheet" href="/public/styles/global.css" />
   <link rel="stylesheet" href="/public/styles/auth.css" />
-  <!-- TODO api.js -->
 <script src="/public/scripts/auth.js" defer></script>
 </head>
 <body class="auth">
@@ -29,10 +31,11 @@ if (empty($formType) && !empty($_SESSION['formType'])) {
 
   <div class="auth__column">
     <div class="auth__container">
-      <img src="/public/assets/logo.png" alt="Trip Planner Logo" class="auth__logo"/>
+      <div class="auth__content">
+        <img src="/public/assets/logo.png" alt="Trip Planner Logo" class="auth__logo"/>
 
-      <!-- LOGIN FORM -->
-      <form class="auth__form" id="loginForm" method="POST" action="/login">
+        <!-- LOGIN FORM -->
+        <form class="auth__form" id="loginForm" method="POST" action="/login">
         <div class="auth__section" id="loginSection">
           <h2 class="auth__title">Log in</h2>
           <label for="email" class="auth__label">Email:</label>
@@ -43,7 +46,7 @@ if (empty($formType) && !empty($_SESSION['formType'])) {
 
           <button type="submit" class="auth__button auth__button--login">Log in</button>
           <p class="auth__switch">Don’t have an account? <a href="#" id="showRegister">Register</a></p>
-          <!-- Komunikaty logowania -->
+          <!-- login messages -->
           <div id="loginError" class="auth__message">
             <?php if (!empty($messages) && ($formType ?? '') === 'login'): ?>
               <?php foreach ($messages as $msg): ?>
@@ -96,6 +99,7 @@ if (empty($formType) && !empty($_SESSION['formType'])) {
           </div>
         </div>
       </form>
+      </div>
     </div>
   </div>
 

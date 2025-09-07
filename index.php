@@ -1,12 +1,5 @@
 <?php
 
-// Configure session settings
-ini_set('session.cookie_lifetime', 0); // Session cookie expires when browser closes
-ini_set('session.gc_maxlifetime', 1800); // 30 minutes server-side cleanup
-ini_set('session.cookie_httponly', 1); // HTTP only cookies for security
-ini_set('session.cookie_secure', 0); // Set to 1 if using HTTPS
-ini_set('session.use_strict_mode', 1); // Strict session ID handling
-
 require_once 'Routing.php';
 
 // Import controllers
@@ -39,7 +32,7 @@ Router::post('api/users/role', 'ApiController', 'updateUserRole');
 Router::post('api/users/password', 'ApiController', 'updateUserPassword');
 Router::post('api/users/delete', 'ApiController', 'deleteUser');
 
-// (opcjonalnie) domyślna trasa na / przekierowuje na auth
+//  additional - default route to / redirects to auth
 Router::get('', 'DefaultController', 'auth');
 
 $path = trim($_SERVER['REQUEST_URI'], '/');

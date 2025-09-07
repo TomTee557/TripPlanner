@@ -4,6 +4,7 @@ require_once 'AppController.php';
 require_once 'src/repository/TripRepository.php';
 require_once 'src/repository/UserRepository.php';
 require_once 'src/helpers/PasswordHelper.php';
+require_once 'src/helpers/SecurityHelper.php';
 
 class ApiController extends AppController {
 
@@ -20,11 +21,9 @@ class ApiController extends AppController {
      * Returns data for JavaScript handling
      */
     private function checkAuth() {
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
-        
-        // Sprawdzenie sesji
+        SecurityHelper::initSession();
+
+        // Check session
         if (!isset($_SESSION['user_logged_in']) || $_SESSION['user_logged_in'] !== true) {
             http_response_code(401);
             header('Content-Type: application/json');
@@ -36,29 +35,6 @@ class ApiController extends AppController {
             exit;
         }
         
-        // Check session timeout
-        $sessionTimeout = 30 * 60; // 30 minutes
-        if (isset($_SESSION['last_activity'])) {
-            if (time() - $_SESSION['last_activity'] > $sessionTimeout) {
-                // Session expired - clear session
-                unset($_SESSION['user_logged_in']);
-                unset($_SESSION['user_email']);
-                unset($_SESSION['user_name']);
-                unset($_SESSION['last_activity']);
-                
-                http_response_code(401);
-                header('Content-Type: application/json');
-                echo json_encode([
-                    'error' => 'Session expired',
-                    'message' => 'Your session has expired due to inactivity. Please log in again.',
-                    'action' => 'show_login_popup' // Signal for JavaScript
-                ]);
-                exit;
-            }
-        }
-        
-        // Update last activity
-        $_SESSION['last_activity'] = time();
         
         return $_SESSION['user_email'];
     }
@@ -67,7 +43,7 @@ class ApiController extends AppController {
      * Checks if current user has admin role
      */
     private function checkAdminAuth() {
-        $userEmail = $this->checkAuth(); // Check basic auth first
+        $userEmail = $this->checkAuth(); // Returns email or exits with 401
         
         if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'ADMIN') {
             http_response_code(403);
@@ -139,7 +115,7 @@ class ApiController extends AppController {
                 exit;
             }
             
-            // Podstawowa walidacja danych
+            // basic data validation
             if (!$input || !isset($input['title']) || !isset($input['country']) || 
                 !isset($input['dateFrom']) || !isset($input['dateTo'])) {
                 http_response_code(400);
